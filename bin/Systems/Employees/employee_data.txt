@@ -1,0 +1,12 @@
+Hospital ID Number: ID_1724577578032
+Name: Raudel Mae Enopi
+Age: 20
+Birthday: October 27, 2003
+Sex: Non-Binary
+Address: Montierra Subdivision
+Phone: 092288533382
+Hospital ID: 
+PRC: asoosokqweq
+Position: qwe
+Assigned Area: qweq
+-----------------------------------------------------

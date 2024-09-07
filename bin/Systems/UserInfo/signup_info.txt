@@ -1,0 +1,54 @@
+Username: RaymundEstaca
+Name: Raymund Gerard Estaca
+Age: 21
+Sex: Male
+Address: #533-A, Zone 5 Camansi Street, Iponan, Cagayan de Oro
+Phone: 09757524678
+Email: raymundgerardrestaca@gmail.com
+Password: password543210
+---------------------------
+Username: Ruedelmae
+Name: RuedelMae
+Age: 21
+Sex: Female
+Address: Montierra Subd
+Phone: 0975752687
+Email: ruedelmae@gmail.com
+Password: rue
+---------------------------
+Username: RaymundGerard
+Name: RaymundEstaca
+Age: 21
+Sex: Male
+Address: Bloomingdale Phase 2
+Phone: 09757524678
+Email: raymundgerardrestaca@gmail.com
+Password: password543210
+---------------------------
+Username: RuedelmaeE
+Name: Ruedelmae
+Age: 21
+Sex: Female
+Address: Montierra Subdivision
+Phone: 09757524678
+Email: ruiedelmae@gmail.com
+Password: rue123
+---------------------------
+Username: Pawix
+Name: Raymund Gerard
+Age: 21
+Sex: Male
+Address: Iponan, Men Halibot
+Phone: 09757524678
+Email: raymundgerardrestaca@gmail.com
+Password: password543210
+---------------------------
+Username: RuedelMae
+Name: Raudel Mae Enopia
+Age: 21
+Sex: Female
+Address: Montierra Subdivision
+Phone: 09757524678
+Email: ruedelmae@gmail.com
+Password: rue123
+---------------------------
