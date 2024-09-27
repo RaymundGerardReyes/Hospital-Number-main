@@ -1,8 +1,8 @@
 Username: RaymundEstaca
-Name: Raymund Gerard Estaca
+Name: RaymundGerard
 Age: 21
 Sex: Male
-Address: #533-A, Zone 5 Camansi Street, Iponan, Cagayan de Oro
+Address: Iponan, Cagayan de Oro
 Phone: 09757524678
 Email: raymundgerardrestaca@gmail.com
 Password: password543210
@@ -51,4 +51,22 @@ Address: Montierra Subdivision
 Phone: 09757524678
 Email: ruedelmae@gmail.com
 Password: rue123
+---------------------------
+Username: rere
+Name: rere
+Age: 21
+Sex: Male
+Address: rere
+Phone: 0912
+Email: rere
+Password: rere
+---------------------------
+Username: Reyes
+Name: Raymund Gerard Estaca
+Age: 
+Sex: Prefer not to say
+Address: 
+Phone: 
+Email: 
+Password: 
 ---------------------------

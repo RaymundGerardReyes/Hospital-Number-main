@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.logging.Logger;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -56,6 +58,11 @@ public class DoctorPanel extends JPanel {
     private TableRowSorter<DefaultTableModel> sorter;
     private Stack<Object[]> undoStack = new Stack<>();
 
+    private static final Color DARK_BLUE = new Color(0, 50, 100);
+    private static final Color LIGHT_GRAY = new Color(240, 240, 240);
+    private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
+    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
+
     public DoctorPanel(ConsultationPanel consultationPanel, ConsultationParentPanel parentPanel) {
         if (consultationPanel == null || parentPanel == null) {
             throw new IllegalArgumentException("ConsultationPanel and ConsultationParentPanel must not be null");
@@ -77,56 +84,59 @@ public class DoctorPanel extends JPanel {
         model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Make the table non-editable by default
-                return false;
+                return column == 4; // Only "Refer" column is editable
             }
         };
 
         doctorTable = new JTable(model);
+        doctorTable.setFont(MAIN_FONT);
+        doctorTable.getTableHeader().setFont(TITLE_FONT);
+        doctorTable.setRowHeight(60);
         sorter = new TableRowSorter<>(model);
         doctorTable.setRowSorter(sorter);
         doctorTable.getColumn("Refer").setCellRenderer(new ButtonRenderer());
         doctorTable.getColumn("Refer").setCellEditor(new ButtonEditor(new JCheckBox()));
 
         JScrollPane tableScrollPane = new JScrollPane(doctorTable);
+        tableScrollPane.setBorder(BorderFactory.createLineBorder(DARK_BLUE));
 
-        searchField = new JTextField(20);
+        searchField = createStyledTextField(20);
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { filterDoctors(); }
             public void removeUpdate(DocumentEvent e) { filterDoctors(); }
             public void changedUpdate(DocumentEvent e) { filterDoctors(); }
         });
 
-        addDoctorField = new JTextField(20);
-
+        addDoctorField = createStyledTextField(20);
         specialistComboBox = new JComboBox<>(getSpecialistList());
+        specialistComboBox.setFont(MAIN_FONT);
+        maxPatientsField = createStyledTextField(5);
 
-        maxPatientsField = new JTextField(5);
-
-        addButton = new JButton("Add Doctor");
+        addButton = createStyledButton("Add Doctor");
         addButton.addActionListener(e -> addDoctor());
 
-        JButton editButton = new JButton(EDIT_LABEL);
+        JButton editButton = createStyledButton(EDIT_LABEL);
         editButton.addActionListener(e -> editAction());
         editButton.setToolTipText("Edit the selected doctor");
 
-        JButton deleteButton = new JButton(DELETE_LABEL);
+        JButton deleteButton = createStyledButton(DELETE_LABEL);
         deleteButton.addActionListener(e -> deleteAction());
         deleteButton.setToolTipText("Delete the selected doctor");
 
-        JButton saveButton = new JButton(SAVE_LABEL);
+        JButton saveButton = createStyledButton(SAVE_LABEL);
         saveButton.addActionListener(e -> saveAction());
         saveButton.setToolTipText("Save changes");
 
-        JButton undoButton = new JButton(UNDO_LABEL);
+        JButton undoButton = createStyledButton(UNDO_LABEL);
         undoButton.addActionListener(e -> undoAction());
         undoButton.setToolTipText("Undo the last action");
 
-        JButton refreshButton = new JButton(REFRESH_LABEL);
+        JButton refreshButton = createStyledButton(REFRESH_LABEL);
         refreshButton.addActionListener(e -> refreshAction());
         refreshButton.setToolTipText("Refresh the data");
 
-        JPanel searchPanel = new JPanel(new FlowLayout());
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(Color.WHITE);
         searchPanel.add(new JLabel("Search: "));
         searchPanel.add(searchField);
         searchPanel.add(editButton);
@@ -135,7 +145,8 @@ public class DoctorPanel extends JPanel {
         searchPanel.add(undoButton);
         searchPanel.add(refreshButton);
 
-        JPanel addDoctorPanel = new JPanel(new FlowLayout());
+        JPanel addDoctorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        addDoctorPanel.setBackground(Color.WHITE);
         addDoctorPanel.add(new JLabel("Add Doctor: "));
         addDoctorPanel.add(addDoctorField);
         addDoctorPanel.add(specialistComboBox);
@@ -143,9 +154,28 @@ public class DoctorPanel extends JPanel {
         addDoctorPanel.add(maxPatientsField);
         addDoctorPanel.add(addButton);
 
-        add(searchPanel, BorderLayout.NORTH);
+        JPanel controlPanel = new JPanel(new BorderLayout());
+        controlPanel.setBackground(Color.WHITE);
+        controlPanel.add(searchPanel, BorderLayout.NORTH);
+        controlPanel.add(addDoctorPanel, BorderLayout.SOUTH);
+
+        add(controlPanel, BorderLayout.NORTH);
         add(tableScrollPane, BorderLayout.CENTER);
-        add(addDoctorPanel, BorderLayout.SOUTH);
+    }
+
+    private JTextField createStyledTextField(int columns) {
+        JTextField textField = new JTextField(columns);
+        textField.setFont(MAIN_FONT);
+        return textField;
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(MAIN_FONT);
+        button.setForeground(Color.WHITE);
+        button.setBackground(DARK_BLUE);
+        button.setFocusPainted(false);
+        return button;
     }
 
     private void editAction() {
@@ -337,6 +367,9 @@ public class DoctorPanel extends JPanel {
     private static class ButtonRenderer extends JButton implements TableCellRenderer {
         public ButtonRenderer() {
             setOpaque(true);
+            setFont(MAIN_FONT);
+            setForeground(Color.WHITE);
+            setBackground(DARK_BLUE);
         }
 
         @Override
@@ -355,6 +388,9 @@ public class DoctorPanel extends JPanel {
             super(checkBox);
             button = new JButton();
             button.setOpaque(true);
+            button.setFont(MAIN_FONT);
+            button.setForeground(Color.WHITE);
+            button.setBackground(DARK_BLUE);
             button.addActionListener(e -> {
                 fireEditingStopped();
                 int row = doctorTable.getSelectedRow();
@@ -365,12 +401,12 @@ public class DoctorPanel extends JPanel {
         }
 
         @Override
-    public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-        label = (value == null) ? "" : value.toString();
-        button.setText(label);
-        isPushed = true;
-        return button;
-    }
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            label = (value == null) ? "" : value.toString();
+            button.setText(label);
+            isPushed = true;
+            return button;
+        }
 
         @Override
         public Object getCellEditorValue() {

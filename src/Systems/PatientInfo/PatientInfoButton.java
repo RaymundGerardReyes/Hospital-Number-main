@@ -35,11 +35,14 @@ public class PatientInfoButton extends JPanel {
     private JTextField positionField; // Added for Position
     private JTextField assignAreaField; // Added for Assign Area
 
+    private JPanel patientInfoViewPanel;
+
+
     private JButton saveButton;
     private PatientInformationViewPanel viewPanel; // Reference to PatientInformationViewPanel
 
-    public PatientInfoButton(PatientInformationViewPanel viewPanel) {
-        this.viewPanel = viewPanel; // Initialize reference to viewPanel
+    public PatientInfoButton(JPanel patientInfoViewPanel) {
+        this.patientInfoViewPanel = patientInfoViewPanel; // Initialize reference to viewPanel
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);

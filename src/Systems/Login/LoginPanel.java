@@ -2,123 +2,222 @@ package Systems.Login;
 
 import Systems.Dashboard.Dashboard;
 import Systems.Signup.SignUp;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import javax.swing.*;
 
 public class LoginPanel extends JPanel {
     private JTextField userField;
     private JPasswordField passField;
     private JProgressBar progressBar;
+    private JButton loginButton;
+    private JButton signupButton;
+
+    // Colors
+    private static final Color PRIMARY_COLOR = new Color(25, 118, 210);
+    private static final Color SECONDARY_COLOR = new Color(245, 245, 245);
+    private static final Color TEXT_COLOR = new Color(33, 33, 33);
+    private static final Color PLACEHOLDER_COLOR = new Color(158, 158, 158);
+
+    // Fonts
+    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 32);
+    private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 16);
+    private static final Font BUTTON_FONT = new Font("Segoe UI", Font.BOLD, 14);
 
     public LoginPanel() {
         setPreferredSize(new Dimension(1300, 700));
+        setBackground(SECONDARY_COLOR);
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.CENTER;
 
-        // Centering username label and text field
-        JLabel userLabel = new JLabel("Username:");
+        // Logo and Title
+        JPanel logoPanel = createLogoPanel();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        add(userLabel, gbc);
-
-        userField = new JTextField(25);
-        gbc.gridx = 1;
-        gbc.gridy = 0;
         gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        add(userField, gbc);
-
-        // Centering password label and password field
-        JLabel passLabel = new JLabel("Password:");
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        add(passLabel, gbc);
-
-        passField = new JPasswordField(25);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        add(passField, gbc);
-
-        // Centering login button
-        JButton loginButton = new JButton("Login");
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.CENTER;
-        add(loginButton, gbc);
+        add(logoPanel, gbc);
 
-        // Aligning signup button
-        JButton signupButton = new JButton("Sign Up");
-        gbc.gridx = 2;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.CENTER;
-        add(signupButton, gbc);
+        // Login Form Panel
+        JPanel formPanel = createFormPanel();
+        gbc.gridy = 1;
+        add(formPanel, gbc);
 
-        // Adding ActionListener to signupButton to open SignUp window
-        signupButton.addActionListener(e -> {
-            new SignUp(); // Open the SignUp window
-            JFrame loginFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            loginFrame.dispose(); // Close the login window
-        });
-
-        // Adding progress bar
+        // Progress Bar
         progressBar = new JProgressBar(0, 100);
         progressBar.setStringPainted(true);
         progressBar.setVisible(false);
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 3;
+        progressBar.setPreferredSize(new Dimension(300, 25));
+        progressBar.setForeground(PRIMARY_COLOR);
+        progressBar.setBackground(SECONDARY_COLOR);
+        gbc.gridy = 2;
         add(progressBar, gbc);
 
-        // Adding ActionListener to loginButton for login functionality
+        // Add action listeners
+        addActionListeners();
+    }
+
+    private JPanel createLogoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        // Logo (replace with your actual logo)
+        ImageIcon logoIcon = new ImageIcon("path/to/your/logo.png");
+        Image scaledImage = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+        JLabel logoLabel = new JLabel(new ImageIcon(scaledImage));
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 20, 0);
+        panel.add(logoLabel, gbc);
+
+        // Title
+        JLabel titleLabel = new JLabel("Hospital Management System");
+        titleLabel.setFont(TITLE_FONT);
+        titleLabel.setForeground(PRIMARY_COLOR);
+        gbc.gridy = 1;
+        panel.add(titleLabel, gbc);
+
+        return panel;
+    }
+
+    private JPanel createFormPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(PRIMARY_COLOR, 2),
+                new EmptyBorder(20, 40, 20, 40)));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 0, 10, 0);
+
+        // Username field
+        userField = createStyledTextField("Username");
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(userField, gbc);
+
+        // Password field
+        passField = createStyledPasswordField("Password");
+        gbc.gridy = 1;
+        panel.add(passField, gbc);
+
+        // Login button
+        loginButton = createStyledButton("Login", PRIMARY_COLOR, Color.WHITE);
+        gbc.gridy = 2;
+        gbc.insets = new Insets(20, 0, 10, 0);
+        panel.add(loginButton, gbc);
+
+        // Sign up button
+        signupButton = createStyledButton("Sign Up", Color.WHITE, PRIMARY_COLOR);
+        gbc.gridy = 3;
+        gbc.insets = new Insets(0, 0, 10, 0);
+        panel.add(signupButton, gbc);
+
+        return panel;
+    }
+
+    private JTextField createStyledTextField(String placeholder) {
+        JTextField textField = new JTextField(20);
+        textField.setFont(MAIN_FONT);
+        textField.setForeground(TEXT_COLOR);
+        textField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        textField.setText(placeholder);
+        textField.setForeground(PLACEHOLDER_COLOR);
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (textField.getText().equals(placeholder)) {
+                    textField.setText("");
+                    textField.setForeground(TEXT_COLOR);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (textField.getText().isEmpty()) {
+                    textField.setText(placeholder);
+                    textField.setForeground(PLACEHOLDER_COLOR);
+                }
+            }
+        });
+        return textField;
+    }
+
+    private JPasswordField createStyledPasswordField(String placeholder) {
+        JPasswordField passwordField = new JPasswordField(20);
+        passwordField.setFont(MAIN_FONT);
+        passwordField.setForeground(TEXT_COLOR);
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        passwordField.setEchoChar((char) 0);
+        passwordField.setText(placeholder);
+        passwordField.setForeground(PLACEHOLDER_COLOR);
+        passwordField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (String.valueOf(passwordField.getPassword()).equals(placeholder)) {
+                    passwordField.setText("");
+                    passwordField.setEchoChar('•');
+                    passwordField.setForeground(TEXT_COLOR);
+                }
+            }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (passwordField.getPassword().length == 0) {
+                    passwordField.setText(placeholder);
+                    passwordField.setEchoChar((char) 0);
+                    passwordField.setForeground(PLACEHOLDER_COLOR);
+                }
+            }
+        });
+        return passwordField;
+    }
+
+    private JButton createStyledButton(String text, Color bgColor, Color fgColor) {
+        JButton button = new JButton(text);
+        button.setFont(BUTTON_FONT);
+        button.setForeground(fgColor);
+        button.setBackground(bgColor);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setOpaque(true);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return button;
+    }
+
+    private void addActionListeners() {
         loginButton.addActionListener(e -> {
             String username = userField.getText().trim();
             String password = new String(passField.getPassword()).trim();
 
-            // Validate login credentials against saved sign-up data
-            boolean loggedIn = validateLogin(username, password);
-
-            if (loggedIn) {
-                // Show custom "Login successful!" dialog
+            if (validateLogin(username, password)) {
                 showLoginSuccessDialog();
-
-                // Display and start the loading bar
-                progressBar.setVisible(true);
-                Timer timer = new Timer(20, null);
-                timer.addActionListener(event -> {
-                    int value = progressBar.getValue();
-                    if (value < 100) {
-                        progressBar.setValue(value + 1);
-                    } else {
-                        timer.stop();
-                        // Proceed with your application logic after loading is complete
-                        JFrame dashboardFrame = new Dashboard();
-                        dashboardFrame.setVisible(true);
-                        JFrame loginFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                        loginFrame.dispose(); // Close the login window
-                    }
-                });
-                timer.start();
+                startProgressBar();
             } else {
-                // If login failed, show error message
-                JOptionPane.showMessageDialog(this, "Invalid username or password. Please try again.");
+                JOptionPane.showMessageDialog(this,
+                        "Invalid username or password. Please try again.",
+                        "Login Failed",
+                        JOptionPane.ERROR_MESSAGE);
             }
+        });
+
+        signupButton.addActionListener(e -> {
+            JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            currentFrame.dispose();
+            SwingUtilities.invokeLater(() -> new SignUp());
         });
     }
 
-    // Method to validate login credentials
     private boolean validateLogin(String username, String password) {
         final String filePath = "src/Systems/UserInfo/signup_info.txt";
 
@@ -149,11 +248,12 @@ public class LoginPanel extends JPanel {
         return false;
     }
 
-    // Method to show the custom "Login successful!" dialog
     private void showLoginSuccessDialog() {
         JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Success", true);
         dialog.setLayout(new BorderLayout());
-        dialog.add(new JLabel("Login successful!", SwingConstants.CENTER), BorderLayout.CENTER);
+        JLabel messageLabel = new JLabel("Login successful!", SwingConstants.CENTER);
+        messageLabel.setFont(MAIN_FONT);
+        dialog.add(messageLabel, BorderLayout.CENTER);
         dialog.setSize(300, 150);
         dialog.setLocationRelativeTo(this);
 
@@ -162,5 +262,34 @@ public class LoginPanel extends JPanel {
         timer.start();
 
         dialog.setVisible(true);
+    }
+
+    private void startProgressBar() {
+        progressBar.setVisible(true);
+        Timer timer = new Timer(20, null);
+        timer.addActionListener(event -> {
+            int value = progressBar.getValue();
+            if (value < 100) {
+                progressBar.setValue(value + 1);
+            } else {
+                timer.stop();
+                JFrame dashboardFrame = new Dashboard();
+                dashboardFrame.setVisible(true);
+                JFrame loginFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                loginFrame.dispose();
+            }
+        });
+        timer.start();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            JFrame frame = new JFrame("Hospital Management System - Login");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setContentPane(new LoginPanel());
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }

@@ -2,206 +2,366 @@ package Systems.Signup;
 
 import Systems.Login.LoginPanel;
 import Systems.UserInfo.SignUpInfo;
-import java.awt.*;
-import javax.swing.*;
 
-public class SignUp {
-    private JFrame frame;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.MaskFormatter;
+import java.awt.*;
+import java.awt.event.*;
+import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SignUp extends JFrame {
+    private JTextField nameField, usernameField, addressField, emailField;
+    private JFormattedTextField birthdayField, phoneField;
+    private JSpinner ageSpinner;
+    private JPasswordField passField, confirmPassField;
+    private JComboBox<String> sexComboBox;
+    private JButton signupButton, backToLoginButton;
+    private LogoPanel logoPanel;
+
+    private static final Color PRIMARY_COLOR = new Color(0, 50, 100);
+    private static final Color SECONDARY_COLOR = new Color(240, 248, 255);
+    private static final Color TEXT_COLOR = new Color(33, 33, 33);
+    private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 16);
+    private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 28);
 
     public SignUp() {
-        frame = new JFrame("Sign Up");
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Close only this frame
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
-        frame.setLocationRelativeTo(null); // Center on screen
-        frame.setResizable(false);
+        setTitle("MyCare HealthCare Solutions - Sign Up");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        setLayout(new BorderLayout());
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridBagLayout());
+        logoPanel = new LogoPanel();
+        add(logoPanel, BorderLayout.NORTH);
+
+        JPanel formPanel = createFormPanel();
+        JScrollPane scrollPane = new JScrollPane(formPanel);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.CENTER);
+
+        setVisible(true);
+    }
+
+    private JPanel createFormPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(SECONDARY_COLOR);
+        panel.setBorder(new EmptyBorder(10, 40, 40, 40));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.LINE_END;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(15, 20, 15, 20);
 
-        // Name
-        JLabel nameLabel = new JLabel("Name:");
+        // First column
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(nameLabel, gbc);
+        addFormField(panel, gbc, "Full Name", nameField = createStyledTextField("Enter your full name"));
+        gbc.gridy++;
+        addFormField(panel, gbc, "Username", usernameField = createStyledTextField("Enter your unique username"));
+        gbc.gridy++;
+        addFormField(panel, gbc, "Birthday", birthdayField = createStyledBirthdayField());
+        gbc.gridy++;
+        addFormField(panel, gbc, "Age", ageSpinner = createStyledAgeSpinner());
+        gbc.gridy++;
+        addFormField(panel, gbc, "Sex", sexComboBox = createStyledComboBox());
 
-        JTextField nameField = new JTextField(20);
-        gbc.gridx = 1;
+        // Second column
+        gbc.gridx = 2;
         gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(nameField, gbc);
+        addFormField(panel, gbc, "Address", addressField = createStyledTextField("Enter your full address"));
+        gbc.gridy++;
+        addFormField(panel, gbc, "Phone Number", phoneField = createStyledPhoneField());
+        gbc.gridy++;
+        addFormField(panel, gbc, "Email Address", emailField = createStyledTextField("Enter your email address"));
+        gbc.gridy++;
+        addFormField(panel, gbc, "Password", passField = createStyledPasswordField("Enter a strong password"));
+        gbc.gridy++;
+        addFormField(panel, gbc, "Confirm Password", confirmPassField = createStyledPasswordField("Confirm your password"));
 
-        // Username
-        JLabel usernameLabel = new JLabel("Username:");
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonPanel.setOpaque(false);
+
+        backToLoginButton = createStyledButton("Back to Login");
+        backToLoginButton.addActionListener(e -> openLoginPanel());
+        buttonPanel.add(backToLoginButton);
+
+        signupButton = createStyledButton("Sign Up");
+        signupButton.addActionListener(e -> handleSignUp());
+        buttonPanel.add(signupButton);
+
         gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(usernameLabel, gbc);
+        gbc.gridy++;
+        gbc.gridwidth = 4;
+        gbc.insets = new Insets(30, 0, 10, 0);
+        panel.add(buttonPanel, gbc);
 
-        JTextField usernameField = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(usernameField, gbc);
+        return panel;
+    }
 
-        // Age
-        JLabel ageLabel = new JLabel("Age:");
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(ageLabel, gbc);
+    private void addFormField(JPanel panel, GridBagConstraints gbc, String labelText, JComponent field) {
+        JLabel label = new JLabel(labelText);
+        label.setFont(MAIN_FONT);
+        label.setForeground(TEXT_COLOR);
+        panel.add(label, gbc);
 
-        JTextField ageField = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(ageField, gbc);
+        gbc.gridx++;
+        panel.add(field, gbc);
+        gbc.gridx--;
+    }
 
-        // Sex Label
-        JLabel sexLabel = new JLabel("Sex:");
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(sexLabel, gbc);
+    private JTextField createStyledTextField(String placeholder) {
+        JTextField field = new JTextField(20);
+        field.setFont(MAIN_FONT);
+        field.setForeground(TEXT_COLOR);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        field.setBackground(Color.WHITE);
+        setPlaceholder(field, placeholder);
+        return field;
+    }
 
-        // Sex Options (for JComboBox)
-        String[] sexOptions = {"Male", "Female", "Other", "Prefer not to say", "Non-binary", "Genderqueer", "Transgender", "Intersex"};
-        JComboBox<String> sexComboBox = new JComboBox<>(sexOptions);
-        sexComboBox.setPreferredSize(new Dimension(200, 30)); // Set preferred size as needed
-
-        // Wrap the ComboBox in a JScrollPane
-        JScrollPane sexScrollPane = new JScrollPane(sexComboBox);
-        sexScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); // Always show vertical scroll bar
-
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        gbc.gridheight = 1; // Reset grid height if needed
-        panel.add(sexScrollPane, gbc);
-
-        // Address
-        JLabel addressLabel = new JLabel("Address:");
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(addressLabel, gbc);
-
-        JTextField addressField = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 4;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(addressField, gbc);
-
-        // Phone
-        JLabel phoneLabel = new JLabel("Phone:");
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(phoneLabel, gbc);
-
-        JTextField phoneField = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 5;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(phoneField, gbc);
-
-        // Email
-        JLabel emailLabel = new JLabel("Email:");
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(emailLabel, gbc);
-
-        JTextField emailField = new JTextField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 6;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(emailField, gbc);
-
-        // Password
-        JLabel passLabel = new JLabel("Password:");
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(passLabel, gbc);
-
-        JPasswordField passField = new JPasswordField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 7;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(passField, gbc);
-
-        // Confirm Password
-        JLabel confirmPassLabel = new JLabel("Confirm Password:");
-        gbc.gridx = 0;
-        gbc.gridy = 8;
-        gbc.anchor = GridBagConstraints.LINE_END;
-        panel.add(confirmPassLabel, gbc);
-
-        JPasswordField confirmPassField = new JPasswordField(20);
-        gbc.gridx = 1;
-        gbc.gridy = 8;
-        gbc.anchor = GridBagConstraints.LINE_START;
-        panel.add(confirmPassField, gbc);
-
-        // Sign Up Button
-        JButton signupButton = new JButton("Sign Up");
-        gbc.gridx = 1;
-        gbc.gridy = 9;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        panel.add(signupButton, gbc);
-
-        // Add panel to frame
-        frame.add(panel);
-        frame.setVisible(true);
-
-        // Action listener for sign up button
-        signupButton.addActionListener(e -> {
-            String name = nameField.getText().trim();
-            String username = usernameField.getText().trim(); // Retrieve username
-            String age = ageField.getText().trim();
-            String sex = (String) sexComboBox.getSelectedItem(); // Retrieve selected sex
-            String address = addressField.getText().trim();
-            String phone = phoneField.getText().trim();
-            String email = emailField.getText().trim();
-            String password = new String(passField.getPassword());
-            String confirmPassword = new String(confirmPassField.getPassword());
-
-            if (!password.equals(confirmPassword)) {
-                JOptionPane.showMessageDialog(frame, "Passwords do not match. Please try again.");
-                return;
+    private JFormattedTextField createStyledBirthdayField() {
+        MaskFormatter formatter = null;
+        try {
+            formatter = new MaskFormatter("##-##-####");
+            formatter.setPlaceholderCharacter('_');
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        JFormattedTextField field = new JFormattedTextField(formatter);
+        field.setFont(MAIN_FONT);
+        field.setForeground(TEXT_COLOR);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        field.setBackground(Color.WHITE);
+        field.setColumns(10);
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                updateAge();
             }
+        });
+        return field;
+    }
 
-            // Create SignUpInfo object
-            SignUpInfo signUpInfo = new SignUpInfo(username, name, age, sex, address, phone, email, password);
+    private JSpinner createStyledAgeSpinner() {
+        SpinnerNumberModel model = new SpinnerNumberModel(0, 0, 120, 1);
+        JSpinner spinner = new JSpinner(model);
+        spinner.setFont(MAIN_FONT);
+        spinner.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        spinner.setBackground(Color.WHITE);
+        return spinner;
+    }
 
-            // Save to file
-            boolean saved = signUpInfo.saveToFile();
-            if (saved) {
-                JOptionPane.showMessageDialog(frame, "Sign Up Successful!");
+    private JFormattedTextField createStyledPhoneField() {
+        MaskFormatter formatter = null;
+        try {
+            formatter = new MaskFormatter("(###) ###-####");
+            formatter.setPlaceholderCharacter('_');
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        JFormattedTextField field = new JFormattedTextField(formatter);
+        field.setFont(MAIN_FONT);
+        field.setForeground(TEXT_COLOR);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        field.setBackground(Color.WHITE);
+        field.setColumns(14);
+        return field;
+    }
 
-                // Close the sign up window
-                frame.dispose();
+    private JPasswordField createStyledPasswordField(String placeholder) {
+        JPasswordField field = new JPasswordField(20);
+        field.setFont(MAIN_FONT);
+        field.setForeground(TEXT_COLOR);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        field.setBackground(Color.WHITE);
+        setPlaceholder(field, placeholder);
 
-                // Open the LoginPanel window
-                JFrame loginFrame = new JFrame("Login");
-                loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Adjust as per your application
-                loginFrame.setSize(1300, 700); // Adjust size as per your LoginPanel preferences
-                loginFrame.setLocationRelativeTo(null); // Center on screen
-                loginFrame.setResizable(false);
+        field.setLayout(new BorderLayout());
+        JLabel iconLabel = new JLabel("👁");
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        field.add(iconLabel, BorderLayout.EAST);
 
-                // Add LoginPanel to loginFrame
-                LoginPanel loginPanel = new LoginPanel();
-                loginFrame.add(loginPanel);
+        return field;
+    }
 
-                // Display the loginFrame
-                loginFrame.setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(frame, "Failed to save sign-up information. Please try again.");
+    private void setPlaceholder(JTextField field, String placeholder) {
+        field.setText(placeholder);
+        field.setForeground(Color.GRAY);
+        field.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (field.getText().equals(placeholder)) {
+                    field.setText("");
+                    field.setForeground(TEXT_COLOR);
+                }
             }
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (field.getText().isEmpty()) {
+                    field.setForeground(Color.GRAY);
+                    field.setText(placeholder);
+                }
+            }
+        });
+    }
+
+    private JComboBox<String> createStyledComboBox() {
+        String[] options = {"Select", "Male", "Female", "Other", "Prefer not to say"};
+        JComboBox<String> comboBox = new JComboBox<>(options);
+        comboBox.setFont(MAIN_FONT);
+        comboBox.setForeground(TEXT_COLOR);
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        return comboBox;
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setBackground(PRIMARY_COLOR);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(PRIMARY_COLOR.brighter());
+            }
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(PRIMARY_COLOR);
+            }
+        });
+        button.setPreferredSize(new Dimension(200, 50));
+        return button;
+    }
+
+    private void updateAge() {
+        String birthdayText = birthdayField.getText().replaceAll("[^0-9]", "");
+        if (birthdayText.length() == 8) {
+            try {
+                LocalDate birthDate = LocalDate.parse(birthdayText, DateTimeFormatter.ofPattern("MMddyyyy"));
+                int age = Period.between(birthDate, LocalDate.now()).getYears();
+                ageSpinner.setValue(age);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void handleSignUp() {
+        List<String> errors = validateFields();
+        if (!errors.isEmpty()) {
+            JOptionPane.showMessageDialog(this, String.join("\n", errors), "Validation Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        SignUpInfo signUpInfo = new SignUpInfo(
+                usernameField.getText().trim(),
+                nameField.getText().trim(),
+                ageSpinner.getValue().toString(),
+                (String) sexComboBox.getSelectedItem(),
+                addressField.getText().trim(),
+                phoneField.getText().trim(),
+                emailField.getText().trim(),
+                new String(passField.getPassword())
+        );
+
+        boolean saved = signUpInfo.saveToFile();
+        if (saved) {
+            JOptionPane.showMessageDialog(this, "Sign Up Successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            openLoginPanel();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to save sign-up information. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private List<String> validateFields() {
+        List<String> errors = new ArrayList<>();
+        if (isPlaceholder(nameField)) errors.add("Name is required");
+        if (isPlaceholder(usernameField)) errors.add("Username is required");
+        if (birthdayField.getText().contains("_")) errors.add("Birthday is required");
+        if ((int)ageSpinner.getValue() == 0) errors.add("Age must be greater than 0");
+        if (sexComboBox.getSelectedIndex() == 0) errors.add("Sex is required");
+        if (isPlaceholder(addressField)) errors.add("Address is required");
+        if (phoneField.getText().contains("_")) errors.add("Phone number is required");
+        if (isPlaceholder(emailField) || !emailField.getText().matches("\\S+@\\S+\\.\\S+")) errors.add("Valid email is required");
+        String password = new String(passField.getPassword());
+        if (password.isEmpty() || isPlaceholder(passField)) errors.add("Password is required");
+        if (!password.equals(new String(confirmPassField.getPassword()))) errors.add("Passwords do not match");
+        return errors;
+    }
+
+    private boolean isPlaceholder(JTextField field) {
+        return field.getForeground() == Color.GRAY;
+    }
+
+    private void openLoginPanel() {
+        SwingUtilities.invokeLater(() -> {
+            JFrame loginFrame = new JFrame("MyCare HealthCare Solutions - Login");
+            loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            loginFrame.setContentPane(new LoginPanel());
+            loginFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            loginFrame.setVisible(true);
+            dispose();
+        });
+    }
+
+    private class LogoPanel extends JPanel {
+        public LogoPanel() {
+            setPreferredSize(new Dimension(getWidth(), 200));
+            setBackground(PRIMARY_COLOR);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int centerX = getWidth() / 2;
+            int centerY = getHeight() / 2;
+
+            g2d.setColor(Color.WHITE);
+            g2d.fillOval(centerX - 50, centerY - 50, 100, 100);
+
+            g2d.setFont(TITLE_FONT);
+            g2d.setColor(Color.WHITE);
+            String text = "MyCare HealthCare Solutions";
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            g2d.drawString(text, centerX - textWidth / 2, centerY + 80);
+
+            g2d.dispose();
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            new SignUp();
         });
     }
 }

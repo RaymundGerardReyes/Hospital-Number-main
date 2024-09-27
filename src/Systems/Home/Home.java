@@ -1,12 +1,37 @@
-package Systems.Dashboard;
+package Systems.Home;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import Systems.Dashboard.DarkMode;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 import java.util.Random;
+
+import javax.swing.BorderFactory;
+
+
+
+import javax.swing.JList;
+import javax.swing.JPanel;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JToggleButton;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.JOptionPane;
 
 public class Home extends JPanel {
     private JLabel totalPatientsLabel, doctorsOnDutyLabel, patientsInORLabel, availableBedsLabel;
@@ -18,69 +43,55 @@ public class Home extends JPanel {
     private JLabel profileNameLabel;
     private DarkMode darkMode;
 
-    // Light mode colors
-    private static final Color LIGHT_BACKGROUND_COLOR = new Color(248, 249, 250);
-    private static final Color LIGHT_CARD_BACKGROUND = Color.WHITE;
-    private static final Color LIGHT_PRIMARY_COLOR = new Color(13, 110, 253);
-    private static final Color LIGHT_TEXT_COLOR = new Color(33, 37, 41);
-    private static final Color LIGHT_MUTED_TEXT_COLOR = new Color(108, 117, 125);
-
-    // Dark mode colors
-    private static final Color DARK_BACKGROUND_COLOR = new Color(33, 37, 41);
-    private static final Color DARK_CARD_BACKGROUND = new Color(52, 58, 64);
-    private static final Color DARK_PRIMARY_COLOR = new Color(13, 202, 240);
-    private static final Color DARK_TEXT_COLOR = Color.WHITE;
-    private static final Color DARK_MUTED_TEXT_COLOR = new Color(173, 181, 189);
-
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
     private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 14);
     private static final Font CARD_VALUE_FONT = new Font("Segoe UI", Font.BOLD, 36);
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
-    public Home() {
+    public Home(DarkMode darkMode) {
         setLayout(new BorderLayout());
-        darkMode = new DarkMode();
+        this.darkMode = darkMode;
         initComponents();
         startUpdateTimer();
     }
+
+    public void updateColors(DarkMode darkMode) {
+        // Update Home panel colors
+        setBackground(darkMode.getBackgroundColor());
+        // ...
+    }
+
+
 
     private void initComponents() {
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(10, 10, 10, 10);
-
-        // Header
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
         gbc.weighty = 0.1;
+        gbc.fill = GridBagConstraints.BOTH;
         JPanel headerPanel = createHeaderPanel();
         contentPanel.add(headerPanel, gbc);
 
-        // Statistics Cards
         gbc.gridy = 1;
         gbc.weighty = 0.2;
         JPanel statsPanel = createStatsPanel();
         contentPanel.add(statsPanel, gbc);
 
-        // Available Doctors
         gbc.gridy = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0.5;
-        gbc.weighty = 0.35;
         JPanel doctorsPanel = createDoctorsPanel();
         contentPanel.add(doctorsPanel, gbc);
 
-        // Recent Patients
         gbc.gridx = 1;
         JPanel patientPanel = createPatientPanel();
         contentPanel.add(patientPanel, gbc);
 
-        // Upcoming Appointments
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
@@ -88,7 +99,6 @@ public class Home extends JPanel {
         JPanel appointmentsPanel = createAppointmentsPanel();
         contentPanel.add(appointmentsPanel, gbc);
 
-        // Add the entire content into a JScrollPane
         JScrollPane scrollPane = new JScrollPane(contentPanel);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setBorder(null);
@@ -110,7 +120,7 @@ public class Home extends JPanel {
         profileNameLabel.setFont(MAIN_FONT);
         rightPanel.add(profileNameLabel);
 
-        darkModeToggle = new JToggleButton("Dark Mode");
+        darkModeToggle = new JToggleButton(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
         darkModeToggle.setFont(MAIN_FONT);
         darkModeToggle.addActionListener(e -> {
             darkMode.toggleDarkMode();
@@ -268,7 +278,6 @@ public class Home extends JPanel {
             ((JLabel)patientsInORLabel.getParent().getComponent(2)).setText(getRandomChange());
             ((JLabel)availableBedsLabel.getParent().getComponent(2)).setText(getRandomChange());
 
-            // Update doctor statuses
             DefaultListModel<Doctor> doctorModel = (DefaultListModel<Doctor>) doctorsList.getModel();
             for (int i = 0; i < doctorModel.size(); i++) {
                 Doctor doctor = doctorModel.get(i);
@@ -276,7 +285,6 @@ public class Home extends JPanel {
                 doctorModel.set(i, doctor);
             }
 
-            // Update patient conditions
             DefaultListModel<Patient> patientModel = (DefaultListModel<Patient>) patientList.getModel();
             String[] conditions = {"Stable", "Critical", "Recovering", "Under Observation"};
             for (int i = 0; i < patientModel.size(); i++) {
@@ -294,14 +302,14 @@ public class Home extends JPanel {
     }
 
     private void updateColors() {
-        Color backgroundColor = darkMode.isDarkModeEnabled() ? DARK_BACKGROUND_COLOR : LIGHT_BACKGROUND_COLOR;
-        Color cardBackground = darkMode.isDarkModeEnabled() ? DARK_CARD_BACKGROUND : LIGHT_CARD_BACKGROUND;
-        Color primaryColor = darkMode.isDarkModeEnabled() ? DARK_PRIMARY_COLOR : LIGHT_PRIMARY_COLOR;
-        Color textColor = darkMode.isDarkModeEnabled() ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR;
-        Color mutedTextColor = darkMode.isDarkModeEnabled() ? DARK_MUTED_TEXT_COLOR : LIGHT_MUTED_TEXT_COLOR;
+        Color backgroundColor = darkMode.getBackgroundColor();
+        Color cardBackground = darkMode.getCardBackgroundColor();
+        Color textColor = darkMode.getTextColor();
+        Color mutedTextColor = darkMode.getMutedTextColor();
+        Color primaryColor = darkMode.getPrimaryColor();
 
         setBackground(backgroundColor);
-        darkModeToggle.setText(darkMode.isDarkModeEnabled() ? "Light Mode" : "Dark Mode");
+        darkModeToggle.setText(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
 
         updateComponentColors(this, cardBackground, textColor, mutedTextColor, primaryColor);
         repaint();
@@ -326,6 +334,9 @@ public class Home extends JPanel {
                 JScrollPane scrollPane = (JScrollPane) comp;
                 scrollPane.getViewport().setBackground(cardBackground);
                 updateComponentColors(scrollPane.getViewport(), cardBackground, textColor, mutedTextColor, primaryColor);
+            } else if (comp instanceof JList) {
+                comp.setBackground(cardBackground);
+                comp.setForeground(textColor);
             }
         }
     }
@@ -367,7 +378,9 @@ public class Home extends JPanel {
     }
 
     private class DoctorListCellRenderer extends JPanel implements ListCellRenderer<Doctor> {
-        private JLabel avatarLabel = new JLabel();
+        private JLabel avatarLabel =
+
+                new JLabel();
         private JLabel nameLabel = new JLabel();
         private JLabel specialtyLabel = new JLabel();
         private JLabel statusLabel = new JLabel();
@@ -405,8 +418,8 @@ public class Home extends JPanel {
             statusLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
             statusLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.isDarkModeEnabled() ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR;
-            Color mutedTextColor = darkMode.isDarkModeEnabled() ? DARK_MUTED_TEXT_COLOR : LIGHT_MUTED_TEXT_COLOR;
+            Color textColor = darkMode.getTextColor();
+            Color mutedTextColor = darkMode.getMutedTextColor();
 
             nameLabel.setForeground(textColor);
             specialtyLabel.setForeground(mutedTextColor);
@@ -419,7 +432,7 @@ public class Home extends JPanel {
                 statusLabel.setForeground(mutedTextColor);
             }
 
-            setBackground(darkMode.isDarkModeEnabled() ? DARK_CARD_BACKGROUND : LIGHT_CARD_BACKGROUND);
+            setBackground(darkMode.getCardBackgroundColor());
 
             return this;
         }
@@ -464,8 +477,8 @@ public class Home extends JPanel {
             conditionLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
             conditionLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.isDarkModeEnabled() ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR;
-            Color mutedTextColor = darkMode.isDarkModeEnabled() ? DARK_MUTED_TEXT_COLOR : LIGHT_MUTED_TEXT_COLOR;
+            Color textColor = darkMode.getTextColor();
+            Color mutedTextColor = darkMode.getMutedTextColor();
 
             nameLabel.setForeground(textColor);
             locationLabel.setForeground(mutedTextColor);
@@ -485,7 +498,7 @@ public class Home extends JPanel {
                     break;
             }
 
-            setBackground(darkMode.isDarkModeEnabled() ? DARK_CARD_BACKGROUND : LIGHT_CARD_BACKGROUND);
+            setBackground(darkMode.getCardBackgroundColor());
 
             return this;
         }
@@ -522,15 +535,15 @@ public class Home extends JPanel {
             timeLabel.setText(appointment.time);
             timeLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.isDarkModeEnabled() ? DARK_TEXT_COLOR : LIGHT_TEXT_COLOR;
-            Color mutedTextColor = darkMode.isDarkModeEnabled() ? DARK_MUTED_TEXT_COLOR : LIGHT_MUTED_TEXT_COLOR;
-            Color primaryColor = darkMode.isDarkModeEnabled() ? DARK_PRIMARY_COLOR : LIGHT_PRIMARY_COLOR;
+            Color textColor = darkMode.getTextColor();
+            Color mutedTextColor = darkMode.getMutedTextColor();
+            Color primaryColor = darkMode.getPrimaryColor();
 
             nameLabel.setForeground(textColor);
             doctorLabel.setForeground(mutedTextColor);
             timeLabel.setForeground(primaryColor);
 
-            setBackground(darkMode.isDarkModeEnabled() ? DARK_CARD_BACKGROUND : LIGHT_CARD_BACKGROUND);
+            setBackground(darkMode.getCardBackgroundColor());
 
             return this;
         }
