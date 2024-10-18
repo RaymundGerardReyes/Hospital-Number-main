@@ -1,350 +1,229 @@
 package Systems.HospitalID;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
+import Systems.Dashboard.DarkMode;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.logging.Logger;
-
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.SwingWorker;
-import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 public class HospitalIDPanel extends JPanel {
-    private static final Logger LOGGER = Logger.getLogger(HospitalIDPanel.class.getName());
-    public static final String FILE_PATH = "C:\\Users\\User\\Desktop\\Code\\Code Practice Summer\\Hospital Management System\\Hospital Number\\src\\Systems\\HospitalID\\hospital_ids.txt";
+    private DarkMode darkMode;
+    private JTextField nameField, addressField, ageField, birthdayField, phoneField, emailField, medicalHistoryField, insuranceField, allergiesField, healthInsuranceIdField;
+    private JComboBox<String> sexComboBox;
+    private JTextField hospitalIdField;
+    private JButton generateButton, clearButton;
+    private JTextArea outputArea;
+    private Map<String, String> patientDatabase;
 
-    private JLabel nameLabel, ageLabel, birthdayLabel, sexLabel, addressLabel, phoneLabel, healthConcernLabel, hospitalIdLabel;
-    private JTextField nameField, birthdayField, sexField, addressField, phoneField, healthConcernField, searchField;
-    private JComboBox<Integer> ageComboBox;
-    private JButton generateButton, viewHospitalIDButton, backButton, editButton, deleteButton, saveButton, refreshButton;
-    private HospitalIDGenerator idGenerator;
-    private DefaultTableModel tableModel;
-    private JTable table;
-    private TableRowSorter<DefaultTableModel> sorter;
-    private JPanel searchPanel;
+    public HospitalIDPanel(DarkMode darkMode) {
+        this.darkMode = darkMode;
+        this.patientDatabase = new HashMap<>();
+        setLayout(new BorderLayout(10, 10));
+        setBorder(new EmptyBorder(20, 20, 20, 20));
 
-    public HospitalIDPanel() {
-        setLayout(new GridBagLayout());
-        setBackground(Color.WHITE);
-        setBorder(new EmptyBorder(10, 10, 10, 10));
-        initializeComponents();
-        configureLayout();
-        addEventListeners();
+        initComponents();
+        layoutComponents();
+        addListeners();
+        updateColors(darkMode);
+        System.out.println("HospitalIDPanel initialized"); // Debug log
     }
 
-    private void initializeComponents() {
-        nameLabel = new JLabel("Name:");
-        ageLabel = new JLabel("Age:");
-        birthdayLabel = new JLabel("Birthday:");
-        sexLabel = new JLabel("Sex:");
-        addressLabel = new JLabel("Address:");
-        phoneLabel = new JLabel("Phone:");
-        healthConcernLabel = new JLabel("Health Concern:");
-        hospitalIdLabel = new JLabel("Generated Hospital ID: "); 
-
+    private void initComponents() {
         nameField = new JTextField(20);
-        ageComboBox = new JComboBox<>(createAgeRange());
-        birthdayField = new JTextField(20);
-        sexField = new JTextField(20);
         addressField = new JTextField(20);
-        phoneField = new JTextField(20);
-        healthConcernField = new JTextField(20);
-        searchField = new JTextField(20);
+        ageField = new JTextField(5);
+        birthdayField = new JTextField(10);
+        sexComboBox = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        phoneField = new JTextField(15);
+        emailField = new JTextField(20);
+        medicalHistoryField = new JTextField(30);
+        insuranceField = new JTextField(20);
+        allergiesField = new JTextField(30);
+        healthInsuranceIdField = new JTextField(15);
+        hospitalIdField = new JTextField(10);
+        hospitalIdField.setEditable(false);
 
         generateButton = new JButton("Generate Hospital ID");
-        viewHospitalIDButton = new JButton("View Hospital ID Patient");
-        backButton = new JButton("Back");
-        editButton = new JButton("Edit");
-        deleteButton = new JButton("Delete");
-        saveButton = new JButton("Save");
-        refreshButton = new JButton("Refresh");
+        clearButton = new JButton("Clear Fields");
 
-        idGenerator = new HospitalIDGenerator();
-
-        tableModel = new DefaultTableModel(
-            new String[]{"#", "Hospital ID", "Name", "Age", "Birthday", "Sex", "Address", "Phone", "Health Concern"}, 0
-        ) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        table = new JTable(tableModel);
-        sorter = new TableRowSorter<>(tableModel);
-        table.setRowSorter(sorter);
-        table.setPreferredScrollableViewportSize(new Dimension(800, 400));
-        table.setFillsViewportHeight(true);
+        outputArea = new JTextArea(10, 30);
+        outputArea.setEditable(false);
     }
 
-    private Integer[] createAgeRange() {
-        Integer[] ageRange = new Integer[100];
-        for (int i = 0; i < 100; i++) {
-            ageRange[i] = i + 1;
-        }
-        return ageRange;
-    }
-
-    private void configureLayout() {
+    private void layoutComponents() {
+        JPanel inputPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
 
-        addComponent(nameLabel, 0, 0, gbc);
-        addComponent(nameField, 1, 0, gbc);
-        addComponent(ageLabel, 0, 1, gbc);
-        addComponent(ageComboBox, 1, 1, gbc);
-        addComponent(birthdayLabel, 0, 2, gbc);
-        addComponent(birthdayField, 1, 2, gbc);
-        addComponent(sexLabel, 0, 3, gbc);
-        addComponent(sexField, 1, 3, gbc);
-        addComponent(addressLabel, 0, 4, gbc);
-        addComponent(addressField, 1, 4, gbc);
-        addComponent(phoneLabel, 0, 5, gbc);
-        addComponent(phoneField, 1, 5, gbc);
-        addComponent(healthConcernLabel, 0, 6, gbc);
-        addComponent(healthConcernField, 1, 6, gbc);
+        addLabelAndField(inputPanel, gbc, "Patient Name:", nameField);
+        addLabelAndField(inputPanel, gbc, "Address:", addressField);
+        addLabelAndField(inputPanel, gbc, "Age:", ageField);
+        addLabelAndField(inputPanel, gbc, "Birthday:", birthdayField);
+        addLabelAndField(inputPanel, gbc, "Sex:", sexComboBox);
+        addLabelAndField(inputPanel, gbc, "Phone Number:", phoneField);
+        addLabelAndField(inputPanel, gbc, "Email Address:", emailField);
+        addLabelAndField(inputPanel, gbc, "Medical History:", medicalHistoryField);
+        addLabelAndField(inputPanel, gbc, "Insurance:", insuranceField);
+        addLabelAndField(inputPanel, gbc, "Allergies:", allergiesField);
+        addLabelAndField(inputPanel, gbc, "Health Insurance ID:", healthInsuranceIdField);
+        addLabelAndField(inputPanel, gbc, "Hospital ID:", hospitalIdField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.add(generateButton);
+        buttonPanel.add(clearButton);
+
+        JScrollPane scrollPane = new JScrollPane(outputArea);
+
+        add(inputPanel, BorderLayout.NORTH);
+        add(buttonPanel, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.SOUTH);
+    }
+
+    private void addLabelAndField(JPanel panel, GridBagConstraints gbc, String labelText, JComponent field) {
+        gbc.gridx = 0;
+        gbc.gridy++;
+        panel.add(new JLabel(labelText), gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 7;
-        gbc.gridwidth = 2;
-        add(generateButton, gbc);
-
-        gbc.gridy = 8;
-        gbc.anchor = GridBagConstraints.WEST;
-        add(hospitalIdLabel, gbc); 
-        
-        System.out.println(hospitalIdLabel);
-
-        gbc.gridx = 1;
-        gbc.gridy = 23;
-        gbc.anchor = GridBagConstraints.CENTER;
-        add(viewHospitalIDButton, gbc);
+        panel.add(field, gbc);
     }
 
-    private void addComponent(Component component, int gridx, int gridy, GridBagConstraints gbc) {
-        gbc.gridx = gridx;
-        gbc.gridy = gridy;
-        add(component, gbc);
-    }
-
-    private void refreshTableData() {
-        new SwingWorker<List<PatientData>, Void>() {
+    private void addListeners() {
+        generateButton.addActionListener(new ActionListener() {
             @Override
-            protected List<PatientData> doInBackground() throws Exception {
-                return FileHandler.loadPatientData();
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Generate button clicked"); // Debug log
+                generateHospitalId();
             }
+        });
 
+        clearButton.addActionListener(new ActionListener() {
             @Override
-            protected void done() {
-                try {
-                    List<PatientData> patientDataList = get();
-                    tableModel.setRowCount(0); // Clear existing rows
-                    for (int i = 0; i < patientDataList.size(); i++) {
-                        PatientData data = patientDataList.get(i);
-                        tableModel.addRow(new Object[]{
-                                i + 1,
-                                data.getHospitalId(),
-                                data.getName(),
-                                data.getAge(),
-                                data.getBirthday(),
-                                data.getSex(),
-                                data.getAddress(),
-                                data.getPhone(),
-                                data.getHealthConcern()
-                        });
-                    }
-                } catch (InterruptedException | ExecutionException e) {
-                    LOGGER.severe("Failed to refresh table data: " + e.getMessage());
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Clear button clicked"); // Debug log
+                clearFields();
+            }
+        });
+    }
+
+    private void generateHospitalId() {
+        String name = nameField.getText().trim();
+        String address = addressField.getText().trim();
+        String sex = (String) sexComboBox.getSelectedItem();
+
+        System.out.println("Generating Hospital ID for: " + name); // Debug log
+
+        if (name.isEmpty() || address.isEmpty() || sex == null) {
+            JOptionPane.showMessageDialog(this, "Please fill in all required fields.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String key = name + "|" + address + "|" + sex;
+        if (patientDatabase.containsKey(key)) {
+            String existingId = patientDatabase.get(key);
+            hospitalIdField.setText(existingId);
+            outputArea.setText("Existing patient found. Hospital ID: " + existingId);
+            System.out.println("Existing patient found: " + existingId); // Debug log
+        } else {
+            String newId = generateUniqueId();
+            patientDatabase.put(key, newId);
+            hospitalIdField.setText(newId);
+            outputArea.setText("New patient registered. Hospital ID: " + newId);
+            System.out.println("New patient registered: " + newId); // Debug log
+        }
+    }
+
+    private String generateUniqueId() {
+        Random random = new Random();
+        String id;
+        do {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < 3; i++) {
+                sb.append((char) (random.nextInt(26) + 'A'));
+            }
+            for (int i = 0; i < 3; i++) {
+                sb.append(random.nextInt(10));
+            }
+            id = sb.toString();
+        } while (patientDatabase.containsValue(id));
+        return id;
+    }
+
+    private void clearFields() {
+        nameField.setText("");
+        addressField.setText("");
+        ageField.setText("");
+        birthdayField.setText("");
+        sexComboBox.setSelectedIndex(0);
+        phoneField.setText("");
+        emailField.setText("");
+        medicalHistoryField.setText("");
+        insuranceField.setText("");
+        allergiesField.setText("");
+        healthInsuranceIdField.setText("");
+        hospitalIdField.setText("");
+        outputArea.setText("");
+        System.out.println("Fields cleared"); // Debug log
+    }
+
+    
+    public void updateColors(DarkMode darkMode) {
+        setBackground(darkMode.getBackgroundColor());
+        outputArea.setBackground(darkMode.getCardBackgroundColor());
+        outputArea.setForeground(darkMode.getTextColor());
+
+        Component[] components = getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JPanel) {
+                comp.setBackground(darkMode.getBackgroundColor());
+                for (Component innerComp : ((JPanel) comp).getComponents()) {
+                    updateComponentColors(innerComp);
                 }
-            }
-        }.execute();
-    }
-
-    private void saveAllData() {
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() throws Exception {
-                List<PatientData> patientDataList = new ArrayList<>();
-                for (int i = 0; i < tableModel.getRowCount(); i++) {
-                    patientDataList.add(new PatientData(
-                            tableModel.getValueAt(i, 2).toString(),
-                            Integer.parseInt(tableModel.getValueAt(i, 3).toString()),
-                            tableModel.getValueAt(i, 4).toString(),
-                            tableModel.getValueAt(i, 5).toString(),
-                            tableModel.getValueAt(i, 6).toString(),
-                            tableModel.getValueAt(i, 7).toString(),
-                            tableModel.getValueAt(i, 8).toString(),
-                            tableModel.getValueAt(i, 1).toString()
-                    ));
-                }
-                FileHandler.saveAllPatientData(patientDataList);
-                return null;
-            }
-
-            @Override
-            protected void done() {
-                refreshTableData();
-            }
-        }.execute();
-    }
-
-    private void addButtonActionListener(JButton button, ActionListener listener) {
-        if (button != null) {
-            button.addActionListener(listener);
-        }
-    }
-
-    private void addEventListeners() {
-        addButtonActionListener(generateButton, new GenerateButtonListener());
-        addButtonActionListener(viewHospitalIDButton, new ViewHospitalIDButtonListener());
-        addButtonActionListener(editButton, new EditButtonListener(table, tableModel));
-        addButtonActionListener(deleteButton, new DeleteButtonListener());
-        addButtonActionListener(refreshButton, e -> refreshTableData());
-    }
-
-    private class GenerateButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            String name = nameField.getText().trim();
-            int age = (int) ageComboBox.getSelectedItem();
-            String birthday = birthdayField.getText().trim();
-            String sex = sexField.getText().trim();
-            String address = addressField.getText().trim();
-            String phone = phoneField.getText().trim();
-            String healthConcern = healthConcernField.getText().trim();
-
-            if (areFieldsValid(name, birthday, sex, address, phone, healthConcern)) {
-                processPatientData(name, age, birthday, sex, address, phone, healthConcern);
-                hospitalIdLabel.repaint();
-                refreshTableData();
             } else {
-                JOptionPane.showMessageDialog(HospitalIDPanel.this, "All fields must be filled!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-
-        private boolean areFieldsValid(String name, String birthday, String sex, String address, String phone, String healthConcern) {
-            return !name.isEmpty() && !birthday.isEmpty() && !sex.isEmpty() && !address.isEmpty() && !phone.isEmpty() && !healthConcern.isEmpty();
-        }
-
-        private void processPatientData(String name, int age, String birthday, String sex, String address, String phone, String healthConcern) {
-            String hospitalId = idGenerator.generateHospitalID();
-            PatientData patientData = new PatientData(name, age, birthday, sex, address, phone, healthConcern, hospitalId);
-            tableModel.addRow(new Object[]{
-                    tableModel.getRowCount() + 1,
-                    hospitalId,
-                    name,
-                    age,
-                    birthday,
-                    sex,
-                    address,
-                    phone,
-                    healthConcern
-            });
-            FileHandler.savePatientData(patientData);
-        }
-    }
-
-    private class ViewHospitalIDButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            JFrame frame = new JFrame("View Hospital IDs");
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.setSize(new Dimension(900, 600));
-            frame.setLayout(new BorderLayout());
-
-            JScrollPane scrollPane = new JScrollPane(table);
-            frame.add(scrollPane, BorderLayout.CENTER);
-
-            JPanel buttonPanel = new JPanel();
-            buttonPanel.add(editButton);
-            buttonPanel.add(deleteButton);
-            buttonPanel.add(saveButton);
-            buttonPanel.add(refreshButton);
-
-            frame.add(buttonPanel, BorderLayout.SOUTH);
-            frame.setVisible(true);
-        }
-    }
-
-    private class EditButtonListener implements ActionListener {
-        private final JTable table;
-        private final DefaultTableModel tableModel;
-
-        public EditButtonListener(JTable table, DefaultTableModel tableModel) {
-            this.table = table;
-            this.tableModel = tableModel;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow != -1) {
-                String name = (String) tableModel.getValueAt(selectedRow, 2);
-                int age = (int) tableModel.getValueAt(selectedRow, 3);
-                String birthday = (String) tableModel.getValueAt(selectedRow, 4);
-                String sex = (String) tableModel.getValueAt(selectedRow, 5);
-                String address = (String) tableModel.getValueAt(selectedRow, 6);
-                String phone = (String) tableModel.getValueAt(selectedRow, 7);
-                String healthConcern = (String) tableModel.getValueAt(selectedRow, 8);
-
-                nameField.setText(name);
-                ageComboBox.setSelectedItem(age);
-                birthdayField.setText(birthday);
-                sexField.setText(sex);
-                addressField.setText(address);
-                phoneField.setText(phone);
-                healthConcernField.setText(healthConcern);
-
-                deleteButton.addActionListener(e1 -> {
-                    tableModel.removeRow(selectedRow);
-                    saveAllData();
-                });
-
-                saveButton.addActionListener(e2 -> {
-                    tableModel.setValueAt(nameField.getText(), selectedRow, 2);
-                    tableModel.setValueAt(ageComboBox.getSelectedItem(), selectedRow, 3);
-                    tableModel.setValueAt(birthdayField.getText(), selectedRow, 4);
-                    tableModel.setValueAt(sexField.getText(), selectedRow, 5);
-                    tableModel.setValueAt(addressField.getText(), selectedRow, 6);
-                    tableModel.setValueAt(phoneField.getText(), selectedRow, 7);
-                    tableModel.setValueAt(healthConcernField.getText(), selectedRow, 8);
-                    saveAllData();
-                });
-            } else {
-                JOptionPane.showMessageDialog(HospitalIDPanel.this, "Please select a row to edit.", "Error", JOptionPane.ERROR_MESSAGE);
+                updateComponentColors(comp);
             }
         }
     }
 
-    private class DeleteButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            int selectedRow = table.getSelectedRow();
-            if (selectedRow != -1) {
-                tableModel.removeRow(selectedRow);
-                saveAllData();
-            } else {
-                JOptionPane.showMessageDialog(HospitalIDPanel.this, "Please select a row to delete.", "Error", JOptionPane.ERROR_MESSAGE);
+    private void updateComponentColors(Component comp) {
+        if (comp instanceof JTextField || comp instanceof JComboBox) {
+            comp.setBackground(darkMode.getCardBackgroundColor());
+            comp.setForeground(darkMode.getTextColor());
+        } else if (comp instanceof JButton) {
+            comp.setBackground(darkMode.getPrimaryColor());
+            comp.setForeground(darkMode.getTextColor());
+        } else if (comp instanceof JLabel) {
+            comp.setForeground(darkMode.getTextColor());
+        }
+    }
+
+    private void updateComponentColorsRecursively(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JTextField || comp instanceof JComboBox) {
+                comp.setBackground(darkMode.getCardBackgroundColor());
+                comp.setForeground(darkMode.getTextColor());
+            } else if (comp instanceof JButton) {
+                comp.setBackground(darkMode.getPrimaryColor());
+                comp.setForeground(darkMode.getTextColor());
+            } else if (comp instanceof JLabel) {
+                comp.setForeground(darkMode.getTextColor());
+            } else if (comp instanceof JPanel) {
+                comp.setBackground(darkMode.getBackgroundColor());
+                updateComponentColorsRecursively((Container) comp);
             }
         }
+    }
+    
+    
+
+    public void refreshData() {
+        System.out.println("Refreshing Hospital ID data"); // Debug log
+        // Implement any data refresh logic here if needed
+        outputArea.setText("Hospital ID data refreshed.");
     }
 }
