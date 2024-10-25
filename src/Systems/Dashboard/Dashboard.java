@@ -1,20 +1,17 @@
 package Systems.Dashboard;
 
 import Systems.Consultation.ConsultationParentPanel;
-import Systems.Employees.Employees;
-import Systems.HospitalID.HospitalIDPanel;
-import Systems.Login.LoginPanel;
-import Systems.PatientInfo.PatientInfoButton;
-import Systems.PatientInfo.PatientInformationViewPanel;
-import Systems.Reports.ReportsPanel;
-import Systems.Laboratory.Laboratory;
-import Systems.HealthCareFacilities.Healthcare;
-import Systems.Home.Home;
-import Systems.Pharmacy.PharmacyPanel;
-import Systems.Finance.Finance;
 import Systems.Finance.FinancePanel;
+import Systems.HealthCareFacilities.Healthcare;
+import Systems.HospitalID.HospitalIDPanel;
+import Systems.Laboratory.Laboratory;
+import Systems.Login.LoginPanel;
 import Systems.PatientManagement.PatientInfoPanel;
 import Systems.PatientManagement.PatientManagement;
+import Systems.Pharmacy.PharmacyPanel;
+import Systems.Reports.ReportsPanel;
+import Systems.Home.Home;
+import Systems.PatientManagement.PatientInfoTable;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -29,21 +26,19 @@ public class Dashboard extends JFrame {
     private final JPanel rightPanel;
     private final Home homePanel;
     private final ConsultationParentPanel consultationParentPanel;
-    private final Employees employeesPanel;
-    private final PatientInfoButton patientInfoButtonPanel;
-    private final PatientInformationViewPanel patientInfoViewPanel;
     private final HospitalIDPanel hospitalIDPanel;
     private final ReportsPanel reportsPanel;
     private final Laboratory laboratoryPanel;
     private final Healthcare healthcareFacilitiesPanel;
     private final PharmacyPanel pharmacyPanel;
     private final FinancePanel financePanel;
+
+
     private JButton currentButton;
     private JLabel titleLabel;
     private JToggleButton darkModeToggle;
     private DarkMode darkMode;
-    private Finance financeSystem;
-    private PatientInfoPanel patientInfoPanel;
+    private final PatientInfoTable patientInfoPanel;
 
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI Light", Font.PLAIN, 24);
@@ -60,19 +55,14 @@ public class Dashboard extends JFrame {
 
         // Initialize panels
         homePanel = new Home(darkMode);
-        patientInfoViewPanel = new PatientInformationViewPanel();
-        patientInfoButtonPanel = new PatientInfoButton(patientInfoViewPanel);
         consultationParentPanel = new ConsultationParentPanel();
-        employeesPanel = new Employees();
-        hospitalIDPanel = new HospitalIDPanel();
-        reportsPanel = new ReportsPanel();
+        hospitalIDPanel = new HospitalIDPanel(darkMode);
+        reportsPanel = new ReportsPanel(darkMode);
         laboratoryPanel = new Laboratory(darkMode);
         healthcareFacilitiesPanel = new Healthcare(darkMode);
         pharmacyPanel = new PharmacyPanel(darkMode);
-        financeSystem = new Finance();
-        financePanel = new FinancePanel(financeSystem, darkMode);
-        // Initialize PatientInfoPanel
-        patientInfoPanel = new PatientInfoPanel(new PatientManagement());
+        financePanel = new FinancePanel(darkMode);
+        patientInfoPanel = new PatientInfoTable(darkMode);
 
         JPanel leftPanel = createLeftPanel();
         leftScrollPane = new JScrollPane(leftPanel);
@@ -96,16 +86,14 @@ public class Dashboard extends JFrame {
         // Add panels to content panel with CardLayout
         contentPanel.add(homePanel, "home");
         contentPanel.add(consultationParentPanel, "consultation");
-        contentPanel.add(employeesPanel, "employees");
-        contentPanel.add(patientInfoButtonPanel, "patientInfo");
-        contentPanel.add(patientInfoViewPanel, "patientInfoView");
-        contentPanel.add(hospitalIDPanel, "hospitalID");
+        contentPanel.add(hospitalIDPanel, "hospitalid");
+        // Ensure PatientInfoPanel is added correctly
+        contentPanel.add(patientInfoPanel, "patientinfo");
         contentPanel.add(reportsPanel, "reports");
         contentPanel.add(laboratoryPanel, "laboratory");
-        contentPanel.add(healthcareFacilitiesPanel, "healthcareFacilities");
+        contentPanel.add(healthcareFacilitiesPanel, "healthcarefacilities");
         contentPanel.add(pharmacyPanel, "pharmacy");
         contentPanel.add(financePanel, "finance");
-        contentPanel.add(patientInfoPanel, "patientInfo");
 
         rightPanel.add(contentPanel, BorderLayout.CENTER);
 
@@ -123,7 +111,7 @@ public class Dashboard extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(darkMode.getBackgroundColor());
-        panel.setBorder(new EmptyBorder(30, 20, 20, 20));
+        panel.setBorder(new EmptyBorder(30, -50, 20, 20));
 
         // Add logo and company name
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -133,10 +121,10 @@ public class Dashboard extends JFrame {
         JLabel logoLabel = new JLabel(new ImageIcon(scaledImage));
         logoPanel.add(logoLabel);
 
-        JLabel companyName = new JLabel("MyCare HealthCare");
+        JLabel companyName = new JLabel("Logo name");
         companyName.setForeground(darkMode.getTextColor());
         companyName.setFont(TITLE_FONT);
-        logoPanel.add(Box.createHorizontalStrut(10));
+        logoPanel.add(Box.createHorizontalStrut(4));
         logoPanel.add(companyName);
 
         panel.add(logoPanel);
@@ -149,27 +137,26 @@ public class Dashboard extends JFrame {
 
         // Create buttons for left panel with icons and text
         String[][] buttonData = {
-                {"Home", "\uD83C\uDFE0"},
-                {"Consultation", "\uD83D\uDC68\u200D⚕\uFE0F"},
-                {"Patient Info", "\uD83C\uDD94"},
-                {"Hospital ID", "\uD83D\uDCCB"},
-                {"Reports", "\uD83D\uDCCA"},
-                {"Laboratory", "\uD83E\uDDEA"},
-                {"Pharmacy", "\uD83D\uDC8A"},
-                {"Healthcare Facility", "\uD83C\uDFE5"},
-                {"Finance", "\uD83D\uDCB0"},
-                {"Sign Out", "\uD83D\uDEAA"}
+            {"Home", "\uD83C\uDFE0"},
+            {"Consultation", "\uD83D\uDC68\u200D⚕\uFE0F"},
+            {"Patient Information", "\uD83C\uDD94"},
+            {"Hospital ID", "\uD83D\uDCCB"},
+            {"Reports", "\uD83D\uDCCA"},
+            {"Laboratory", "\uD83E\uDDEA"},
+            {"Pharmacy", "\uD83D\uDC8A"},
+            {"Healthcare Facility", "\uD83C\uDFE5"},
+            {"Finance", "\uD83D\uDCB0"},
+            {"Sign Out", "\uD83D\uDEAA"}
         };
-
+        
         for (String[] data : buttonData) {
             JButton button = createButton(data[0], data[1]);
             panel.add(button);
             panel.add(Box.createVerticalStrut(10));
-
+        
             // Add action listeners to buttons
             button.addActionListener(createActionListener(data[0].toLowerCase()));
         }
-
         panel.add(Box.createVerticalGlue());
 
         return panel;
@@ -210,41 +197,48 @@ public class Dashboard extends JFrame {
         return button;
     }
 
-    // Modify the createActionListener method to include the new panel
     private ActionListener createActionListener(String panelName) {
         return e -> {
-            if (panelName.equals("sign out")) {
-                signOut();
-            } else if (panelName.equals("patient info")) {
-                showPanel("patientInfo");
-            } else {
-                showPanel(panelName.toLowerCase().replace(" ", ""));
-            }
+            System.out.println("Button clicked for panel: " + panelName);
+            showPanel(panelName.toLowerCase().replace(" ", ""));
         };
-    
     }
-
-
-   private void showPanel(String panelName) {
-    CardLayout cardLayout = (CardLayout) ((JPanel) rightPanel.getComponent(1)).getLayout();
-    cardLayout.show((JPanel) rightPanel.getComponent(1), panelName);
-    highlightButton(panelName);
-    updateTitle(panelName);
     
-    // Update colors when switching panels
-    updateColors();
 
-    // Refresh specific panels when shown
-    if (panelName.equals("pharmacy")) {
-        pharmacyPanel.refreshData();
-    } else if (panelName.equals("finance")) {
-        financePanel.refreshData();
-    } else if (panelName.equals("healthcareFacilities")) {
-        healthcareFacilitiesPanel.refreshData();
+    private void showPanel(String panelName) {
+        System.out.println("Attempting to display panel: " + panelName); // Debug print
+        CardLayout cardLayout = (CardLayout) ((JPanel) rightPanel.getComponent(1)).getLayout();
+        cardLayout.show((JPanel) rightPanel.getComponent(1), panelName);
+    
+        System.out.println("Panel displayed: " + panelName); // Debug confirmation
+    
+        rightPanel.revalidate(); // Ensure the layout is refreshed
+        rightPanel.repaint();
+    
+        // Refresh specific panels when shown
+        switch (panelName) {
+            case "pharmacy":
+                pharmacyPanel.refreshData();
+                break;
+            case "finance":
+                financePanel.refreshData();
+                break;
+             case "patientinfo":
+                ((PatientInfoTable) patientInfoPanel).updateColors();
+                ((PatientInfoTable) patientInfoPanel).refreshData(); // Add this line
+                break;
+            case "healthcarefacilities":
+                healthcareFacilitiesPanel.refreshData();
+                break;
+            case "hospitalid":
+                hospitalIDPanel.refreshData();
+                break;
+            case "reports":
+                reportsPanel.refreshData();
+                break;
+        }
     }
-}
-
-
+    
     private void highlightButton(String panelName) {
         if (currentButton != null) {
             currentButton.setBackground(darkMode.getBackgroundColor());
@@ -310,11 +304,9 @@ public class Dashboard extends JFrame {
 
     private void createDarkModeToggle() {
         darkModeToggle = new JToggleButton();
-        darkModeToggle.setIcon(new ImageIcon("path/to/light_mode_icon.png"));
-        darkModeToggle.setSelectedIcon(new ImageIcon("path/to/dark_mode_icon.png"));
+        darkModeToggle.setText(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
         darkModeToggle.setToolTipText("Toggle Dark Mode");
         darkModeToggle.setBorderPainted(false);
-        darkModeToggle.setContentAreaFilled(false);
         darkModeToggle.setFocusPainted(false);
         darkModeToggle.setCursor(new Cursor(Cursor.HAND_CURSOR));
         darkModeToggle.addActionListener(e -> toggleDarkMode());
@@ -396,11 +388,14 @@ public class Dashboard extends JFrame {
         updateLeftPanelColors();
         updateRightPanelColors();
         updateHeaderColors();
+    
+        hospitalIDPanel.updateColors(darkMode);
         homePanel.updateColors(darkMode);
         laboratoryPanel.updateColors();
         healthcareFacilitiesPanel.updateColors();
+        patientInfoPanel.updateColors();
         pharmacyPanel.updateColors();
-        financePanel.updateColors();
+        financePanel.updateColors(darkMode);
         repaint();
     }
 
@@ -482,6 +477,7 @@ public class Dashboard extends JFrame {
             dispose();
         }
     }
+    
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Dashboard::new);

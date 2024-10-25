@@ -34,6 +34,7 @@ public class Healthcare extends JPanel {
         updateColors();
     }
 
+
     private void initComponents() {
         // Initialize table
         String[] columnNames = {"Name", "Type", "Address", "Contact"};
@@ -351,6 +352,8 @@ public class Healthcare extends JPanel {
     public void refreshData() {
         // Add any necessary refresh logic here
         // For example, you might want to update the table data or reset some fields
+        tableModel.setRowCount(0);
+        // Add logic to repopulate the table with fresh data
         updateStatus("Healthcare Facilities data refreshed");
     }
 

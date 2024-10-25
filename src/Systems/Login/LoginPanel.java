@@ -11,6 +11,8 @@ import java.awt.event.FocusEvent;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class LoginPanel extends JPanel {
     private JTextField userField;
@@ -18,6 +20,7 @@ public class LoginPanel extends JPanel {
     private JProgressBar progressBar;
     private JButton loginButton;
     private JButton signupButton;
+    private static List<Runnable> loginSuccessListeners = new ArrayList<>();
 
     // Colors
     private static final Color PRIMARY_COLOR = new Color(25, 118, 210);
@@ -62,6 +65,16 @@ public class LoginPanel extends JPanel {
 
         // Add action listeners
         addActionListeners();
+    }
+
+    public static void addLoginSuccessListener(Runnable listener) {
+        loginSuccessListeners.add(listener);
+    }
+
+    public void handleLoginSuccess() {
+        for (Runnable listener : loginSuccessListeners) {
+            listener.run();
+        }
     }
 
     private JPanel createLogoPanel() {

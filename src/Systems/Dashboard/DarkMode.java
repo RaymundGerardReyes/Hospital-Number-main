@@ -11,8 +11,25 @@ public class DarkMode {
     private static final Color LIGHT_GRAY = new Color(200, 200, 200);
 
 
+    private Color inputBackgroundColor;
+    private Color inputTextColor;
+    private Color buttonBackgroundColor;
+    private Color buttonTextColor;
+    private Color borderColor;
+    private Color titleTextColor;
+
     public DarkMode() {
         this.isDarkMode = false; // Initialize with default value
+    }
+
+     // Getter for the defined color
+     public Color getTitleTextColor() {
+        return titleTextColor;
+    }
+
+    // Setter for the defined color (optional)
+    public void setTitleTextColor(Color color) {
+        this.titleTextColor = color;
     }
 
     public boolean isDarkMode() {
@@ -54,4 +71,51 @@ public class DarkMode {
         component.setBackground(getBackgroundColor());
         component.setForeground(getTextColor());
     }
+
+    public Color getInputBackgroundColor() {
+        return inputBackgroundColor;
+    }
+
+    public Color getInputTextColor() {
+        return inputTextColor;
+    }
+
+    public Color getButtonBackgroundColor() {
+        return buttonBackgroundColor;
+    }
+
+    public Color getButtonTextColor() {
+        return buttonTextColor;
+    }
+
+    public Color getBorderColor() {
+        if (borderColor == null) {
+            // Set a default color if the border color is null
+            borderColor = Color.GRAY;
+        }
+        return borderColor;
+    }
+
+    // Setters for the defined colors (optional)
+    public void setInputBackgroundColor(Color color) {
+        this.inputBackgroundColor = color;
+    }
+
+    public void setInputTextColor(Color color) {
+        this.inputTextColor = color;
+    }
+
+    public void setButtonBackgroundColor(Color color) {
+        this.buttonBackgroundColor = color;
+    }
+
+    public void setButtonTextColor(Color color) {
+        this.buttonTextColor = color;
+    }
+
+    public void setBorderColor(Color color) {
+        this.borderColor = color;
+    }
+
+
 }

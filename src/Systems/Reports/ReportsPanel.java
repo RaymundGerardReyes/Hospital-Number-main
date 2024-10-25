@@ -2,6 +2,9 @@ package Systems.Reports;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import Systems.Dashboard.DarkMode;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,6 +24,7 @@ public class ReportsPanel extends JPanel {
     private JProgressBar progressBar;
     private JButton exportButton;
     private JButton printButton;
+    private DarkMode darkMode;
 
     private static final Color BACKGROUND_COLOR = new Color(240, 240, 240);
     private static final Color ACCENT_COLOR = new Color(70, 130, 180);
@@ -28,7 +32,8 @@ public class ReportsPanel extends JPanel {
     private static final Font TITLE_FONT = new Font("Arial", Font.BOLD, 18);
     private static final Font LABEL_FONT = new Font("Arial", Font.PLAIN, 14);
 
-    public ReportsPanel() {
+  public ReportsPanel(DarkMode darkMode) {
+        this.darkMode = darkMode;
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setBackground(BACKGROUND_COLOR);
@@ -47,6 +52,12 @@ public class ReportsPanel extends JPanel {
         initializeTimer();
     }
 
+
+    public void refreshData() {
+        // Logic to refresh the data displayed in the ReportsPanel
+        // For example, you can update the data in the UI components or fetch new data from a data source
+    }
+    
     private JPanel createTopPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(BACKGROUND_COLOR);

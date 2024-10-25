@@ -11,27 +11,7 @@ import java.awt.event.ActionListener;
 import java.text.DecimalFormat;
 import java.util.Random;
 
-import javax.swing.BorderFactory;
-
-
-
-import javax.swing.JList;
-import javax.swing.JPanel;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JButton;
-import javax.swing.JToggleButton;
-import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.ListCellRenderer;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.JOptionPane;
+import Systems.Dashboard.DarkMode;
 
 public class Home extends JPanel {
     private JLabel totalPatientsLabel, doctorsOnDutyLabel, patientsInORLabel, availableBedsLabel;
@@ -40,28 +20,25 @@ public class Home extends JPanel {
     private JList<Appointment> appointmentList;
     private Timer updateTimer;
     private JToggleButton darkModeToggle;
-    private JLabel profileNameLabel;
-    private DarkMode darkMode;
+    private boolean isDarkMode = false;
+     private DarkMode darkMode;
+    
 
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
-    private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 14);
+    private static final Font CARD_TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
     private static final Font CARD_VALUE_FONT = new Font("Segoe UI", Font.BOLD, 36);
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
 
     public Home(DarkMode darkMode) {
-        setLayout(new BorderLayout());
         this.darkMode = darkMode;
+        setLayout(new BorderLayout());
         initComponents();
         startUpdateTimer();
     }
 
     public void updateColors(DarkMode darkMode) {
-        // Update Home panel colors
         setBackground(darkMode.getBackgroundColor());
-        // ...
     }
-
-
 
     private void initComponents() {
         JPanel contentPanel = new JPanel(new GridBagLayout());
@@ -111,22 +88,32 @@ public class Home extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        JLabel titleLabel = new JLabel("MyCare Health Solutions Dashboard");
+        JLabel titleLabel = new JLabel("Healthcare Dashboard");
         titleLabel.setFont(TITLE_FONT);
         panel.add(titleLabel, BorderLayout.WEST);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        profileNameLabel = new JLabel("Dr. John Doe");
-        profileNameLabel.setFont(MAIN_FONT);
-        rightPanel.add(profileNameLabel);
+        
+        JButton notificationButton = new JButton(new ImageIcon("path/to/bell-icon.png"));
+        notificationButton.setBorderPainted(false);
+        notificationButton.setContentAreaFilled(false);
+        notificationButton.setFocusPainted(false);
+        rightPanel.add(notificationButton);
 
-        darkModeToggle = new JToggleButton(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
-        darkModeToggle.setFont(MAIN_FONT);
+        darkModeToggle = new JToggleButton(new ImageIcon("path/to/sun-icon.png"));
+        darkModeToggle.setSelectedIcon(new ImageIcon("path/to/moon-icon.png"));
+        darkModeToggle.setBorderPainted(false);
+        darkModeToggle.setContentAreaFilled(false);
+        darkModeToggle.setFocusPainted(false);
         darkModeToggle.addActionListener(e -> {
-            darkMode.toggleDarkMode();
+            isDarkMode = darkModeToggle.isSelected();
             updateColors();
         });
         rightPanel.add(darkModeToggle);
+
+        JLabel avatarLabel = new JLabel(new ImageIcon("path/to/avatar.png"));
+        avatarLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
+        rightPanel.add(avatarLabel);
 
         panel.add(rightPanel, BorderLayout.EAST);
 
@@ -152,7 +139,10 @@ public class Home extends JPanel {
 
     private JLabel createStatsCard(String title, String initialValue) {
         JPanel card = new JPanel(new BorderLayout());
-        card.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(CARD_TITLE_FONT);
@@ -178,7 +168,10 @@ public class Home extends JPanel {
 
     private JPanel createDoctorsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
         JLabel titleLabel = new JLabel("Available Doctors");
         titleLabel.setFont(CARD_TITLE_FONT);
@@ -186,10 +179,10 @@ public class Home extends JPanel {
 
         DefaultListModel<Doctor> doctorsModel = new DefaultListModel<>();
         doctorsModel.addElement(new Doctor("Dr. Raymund Gerard", "Cardiology", "Available"));
-        doctorsModel.addElement(new Doctor("Dr. Raymund Gerard", "Neurology", "In Surgery"));
-        doctorsModel.addElement(new Doctor("Dr. Raymund Gerard", "Pediatrics", "Available"));
-        doctorsModel.addElement(new Doctor("Dr. Raymund Gerard", "Oncology", "On Call"));
-        doctorsModel.addElement(new Doctor("Dr. Raymund Gerard", "Orthopedics", "Available"));
+        doctorsModel.addElement(new Doctor("Dr. Emily Chen", "Neurology", "In Surgery"));
+        doctorsModel.addElement(new Doctor("Dr. Michael Lee", "Pediatrics", "Available"));
+        doctorsModel.addElement(new Doctor("Dr. Sarah Johnson", "Oncology", "On Call"));
+        doctorsModel.addElement(new Doctor("Dr. David Brown", "Orthopedics", "Available"));
 
         doctorsList = new JList<>(doctorsModel);
         doctorsList.setCellRenderer(new DoctorListCellRenderer());
@@ -203,7 +196,10 @@ public class Home extends JPanel {
 
     private JPanel createPatientPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
         JLabel titleLabel = new JLabel("Recent Patients");
         titleLabel.setFont(CARD_TITLE_FONT);
@@ -228,11 +224,23 @@ public class Home extends JPanel {
 
     private JPanel createAppointmentsPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
 
+        JPanel headerPanel = new JPanel(new BorderLayout());
         JLabel titleLabel = new JLabel("Upcoming Appointments");
         titleLabel.setFont(CARD_TITLE_FONT);
-        panel.add(titleLabel, BorderLayout.NORTH);
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+
+        JButton addAppointmentButton = new JButton("Add New Appointment");
+        addAppointmentButton.setFont(MAIN_FONT);
+        addAppointmentButton.setFocusPainted(false);
+        addAppointmentButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Add New Appointment functionality to be implemented."));
+        headerPanel.add(addAppointmentButton, BorderLayout.EAST);
+
+        panel.add(headerPanel, BorderLayout.NORTH);
 
         DefaultListModel<Appointment> appointmentsModel = new DefaultListModel<>();
         appointmentsModel.addElement(new Appointment("Alice Brown", "09:00 AM", "Dr. Smith"));
@@ -245,12 +253,6 @@ public class Home extends JPanel {
         JScrollPane scrollPane = new JScrollPane(appointmentList);
         scrollPane.setBorder(null);
         panel.add(scrollPane, BorderLayout.CENTER);
-
-        JButton addAppointmentButton = new JButton("Add New Appointment");
-        addAppointmentButton.setFont(MAIN_FONT);
-        addAppointmentButton.setFocusPainted(false);
-        addAppointmentButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Add New Appointment functionality to be implemented."));
-        panel.add(addAppointmentButton, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -302,38 +304,31 @@ public class Home extends JPanel {
     }
 
     private void updateColors() {
-        Color backgroundColor = darkMode.getBackgroundColor();
-        Color cardBackground = darkMode.getCardBackgroundColor();
-        Color textColor = darkMode.getTextColor();
-        Color mutedTextColor = darkMode.getMutedTextColor();
-        Color primaryColor = darkMode.getPrimaryColor();
-
+        Color backgroundColor = isDarkMode ? new Color(18, 18, 18) : Color.WHITE;
+        Color textColor = isDarkMode ? Color.WHITE : Color.BLACK;
+        Color cardBackground = isDarkMode ? new Color(30, 30, 30) : new Color(245, 245, 245);
+    
         setBackground(backgroundColor);
-        darkModeToggle.setText(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
-
-        updateComponentColors(this, cardBackground, textColor, mutedTextColor, primaryColor);
+        updateComponentColors(this, backgroundColor, textColor, cardBackground);
         repaint();
         revalidate();
     }
-
-    private void updateComponentColors(Container container, Color cardBackground, Color textColor, Color mutedTextColor, Color primaryColor) {
+    
+    private void updateComponentColors(Container container, Color backgroundColor, Color textColor, Color cardBackground) {
         for (Component comp : container.getComponents()) {
             if (comp instanceof JPanel) {
                 comp.setBackground(cardBackground);
-                updateComponentColors((Container) comp, cardBackground, textColor, mutedTextColor, primaryColor);
+                updateComponentColors((Container) comp, backgroundColor, textColor, cardBackground);
             } else if (comp instanceof JLabel) {
                 comp.setForeground(textColor);
-                if (((JLabel) comp).getFont().getStyle() == Font.PLAIN) {
-                    comp.setForeground(mutedTextColor);
-                }
             } else if (comp instanceof JButton) {
-                comp.setBackground(primaryColor);
-                comp.setForeground(textColor);
+                ((JButton) comp).setForeground(textColor);
+                ((JButton) comp).setBackground(cardBackground);
             } else if (comp instanceof JScrollPane) {
                 comp.setBackground(cardBackground);
                 JScrollPane scrollPane = (JScrollPane) comp;
                 scrollPane.getViewport().setBackground(cardBackground);
-                updateComponentColors(scrollPane.getViewport(), cardBackground, textColor, mutedTextColor, primaryColor);
+                updateComponentColors(scrollPane.getViewport(), backgroundColor, textColor, cardBackground);
             } else if (comp instanceof JList) {
                 comp.setBackground(cardBackground);
                 comp.setForeground(textColor);
@@ -345,6 +340,8 @@ public class Home extends JPanel {
         String name;
         String specialty;
         String status;
+
+        
 
         Doctor(String name, String specialty, String status) {
             this.name = name;
@@ -378,29 +375,18 @@ public class Home extends JPanel {
     }
 
     private class DoctorListCellRenderer extends JPanel implements ListCellRenderer<Doctor> {
-        private JLabel avatarLabel =
-
-                new JLabel();
         private JLabel nameLabel = new JLabel();
         private JLabel specialtyLabel = new JLabel();
         private JLabel statusLabel = new JLabel();
 
         DoctorListCellRenderer() {
             setLayout(new BorderLayout(10, 0));
-
-            avatarLabel.setPreferredSize(new Dimension(40, 40));
-            avatarLabel.setOpaque(true);
-            avatarLabel.setBorder(BorderFactory.createLineBorder(new Color(222, 226, 230)));
-
             JPanel infoPanel = new JPanel(new GridLayout(2, 1));
             infoPanel.setOpaque(false);
             infoPanel.add(nameLabel);
             infoPanel.add(specialtyLabel);
-
-            add(avatarLabel, BorderLayout.WEST);
             add(infoPanel, BorderLayout.CENTER);
             add(statusLabel, BorderLayout.EAST);
-
             setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         }
 
@@ -409,57 +395,41 @@ public class Home extends JPanel {
                                                       boolean isSelected, boolean cellHasFocus) {
             nameLabel.setText(doctor.name);
             nameLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
-
             specialtyLabel.setText(doctor.specialty);
             specialtyLabel.setFont(MAIN_FONT);
-
             statusLabel.setText(doctor.status);
-            statusLabel.setOpaque(true);
-            statusLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
             statusLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.getTextColor();
-            Color mutedTextColor = darkMode.getMutedTextColor();
+            Color textColor = isDarkMode ? Color.WHITE : Color.BLACK;
+            Color mutedTextColor = isDarkMode ? new Color(170, 170, 170) : new Color(100, 100, 100);
 
             nameLabel.setForeground(textColor);
             specialtyLabel.setForeground(mutedTextColor);
 
             if (doctor.status.equals("Available")) {
-                statusLabel.setBackground(new Color(25, 135, 84));
-                statusLabel.setForeground(Color.WHITE);
+                statusLabel.setForeground(new Color(25, 135, 84));
             } else {
-                statusLabel.setBackground(new Color(233, 236, 239));
                 statusLabel.setForeground(mutedTextColor);
             }
 
-            setBackground(darkMode.getCardBackgroundColor());
-
+            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
             return this;
         }
     }
 
     private class PatientListCellRenderer extends JPanel implements ListCellRenderer<Patient> {
-        private JLabel avatarLabel = new JLabel();
         private JLabel nameLabel = new JLabel();
         private JLabel locationLabel = new JLabel();
         private JLabel conditionLabel = new JLabel();
 
         PatientListCellRenderer() {
             setLayout(new BorderLayout(10, 0));
-
-            avatarLabel.setPreferredSize(new Dimension(40, 40));
-            avatarLabel.setOpaque(true);
-            avatarLabel.setBorder(BorderFactory.createLineBorder(new Color(222, 226, 230)));
-
             JPanel infoPanel = new JPanel(new GridLayout(2, 1));
             infoPanel.setOpaque(false);
             infoPanel.add(nameLabel);
             infoPanel.add(locationLabel);
-
-            add(avatarLabel, BorderLayout.WEST);
             add(infoPanel, BorderLayout.CENTER);
             add(conditionLabel, BorderLayout.EAST);
-
             setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         }
 
@@ -468,58 +438,47 @@ public class Home extends JPanel {
                                                       boolean isSelected, boolean cellHasFocus) {
             nameLabel.setText(patient.name);
             nameLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
-
             locationLabel.setText(patient.location);
             locationLabel.setFont(MAIN_FONT);
-
             conditionLabel.setText(patient.condition);
-            conditionLabel.setOpaque(true);
-            conditionLabel.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
             conditionLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.getTextColor();
-            Color mutedTextColor = darkMode.getMutedTextColor();
+            Color textColor = isDarkMode ? Color.WHITE : Color.BLACK;
+            Color mutedTextColor = isDarkMode ? new Color(170, 170, 170) : new Color(100, 100, 100);
 
             nameLabel.setForeground(textColor);
             locationLabel.setForeground(mutedTextColor);
 
             switch (patient.condition) {
                 case "Stable":
-                    conditionLabel.setBackground(new Color(25, 135, 84));
-                    conditionLabel.setForeground(Color.WHITE);
+                    conditionLabel.setForeground(new Color(25, 135, 84));
                     break;
                 case "Critical":
-                    conditionLabel.setBackground(new Color(220, 53, 69));
-                    conditionLabel.setForeground(Color.WHITE);
+                    conditionLabel.setForeground(new Color(220, 53, 69));
                     break;
                 default:
-                    conditionLabel.setBackground(new Color(255, 193, 7));
-                    conditionLabel.setForeground(Color.BLACK);
+                    conditionLabel.setForeground(new Color(255, 193, 7));
                     break;
             }
 
-            setBackground(darkMode.getCardBackgroundColor());
-
+            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
             return this;
         }
     }
 
     private class AppointmentListCellRenderer extends JPanel implements ListCellRenderer<Appointment> {
         private JLabel nameLabel = new JLabel();
-        private JLabel timeLabel = new JLabel();
         private JLabel doctorLabel = new JLabel();
+        private JLabel timeLabel = new JLabel();
 
         AppointmentListCellRenderer() {
             setLayout(new BorderLayout(10, 0));
-
             JPanel infoPanel = new JPanel(new GridLayout(2, 1));
             infoPanel.setOpaque(false);
             infoPanel.add(nameLabel);
             infoPanel.add(doctorLabel);
-
             add(infoPanel, BorderLayout.CENTER);
             add(timeLabel, BorderLayout.EAST);
-
             setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         }
 
@@ -528,23 +487,20 @@ public class Home extends JPanel {
                                                       boolean isSelected, boolean cellHasFocus) {
             nameLabel.setText(appointment.patientName);
             nameLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
-
             doctorLabel.setText(appointment.doctorName);
             doctorLabel.setFont(MAIN_FONT);
-
             timeLabel.setText(appointment.time);
             timeLabel.setFont(MAIN_FONT.deriveFont(Font.BOLD));
 
-            Color textColor = darkMode.getTextColor();
-            Color mutedTextColor = darkMode.getMutedTextColor();
-            Color primaryColor = darkMode.getPrimaryColor();
+            Color textColor = isDarkMode ? Color.WHITE : Color.BLACK;
+            Color mutedTextColor = isDarkMode ? new Color(170, 170, 170) : new Color(100, 100, 100);
+            Color primaryColor = isDarkMode ? new Color(79, 70, 229) : new Color(59, 130, 246);
 
             nameLabel.setForeground(textColor);
             doctorLabel.setForeground(mutedTextColor);
             timeLabel.setForeground(primaryColor);
 
-            setBackground(darkMode.getCardBackgroundColor());
-
+            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
             return this;
         }
     }

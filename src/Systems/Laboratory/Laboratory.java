@@ -2,9 +2,12 @@ package Systems.Laboratory;
 
 import Systems.Dashboard.DarkMode;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.JTextComponent;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.text.SimpleDateFormat;
@@ -35,18 +38,28 @@ public class Laboratory extends JPanel {
     }
 
     private void initComponents() {
-        // Header
-        JLabel headerLabel = new JLabel("Laboratory Management", JLabel.CENTER);
-        headerLabel.setFont(HEADER_FONT);
+       // Initialize table
+    String[] columnNames = {"Patient ID", "Test Name", "Test Type", "Date", "Status"};
+    tableModel = new DefaultTableModel(columnNames, 0) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false; // Make the table non-editable
+        }
 
-        // Initialize table
-        String[] columnNames = {"Patient ID", "Test Name", "Test Type", "Date", "Status"};
-        tableModel = new DefaultTableModel(columnNames, 0);
+        @Override
+        public Class<?> getColumnClass(int column) {
+            return String.class; // Set the column class to String
+        }
+    };
         testsTable = new JTable(tableModel);
         testsTable.setFont(MAIN_FONT);
         testsTable.getTableHeader().setFont(MAIN_FONT);
         testsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         testsTable.getSelectionModel().addListSelectionListener(e -> updateResultField());
+
+     // Set the table header foreground color to light white
+     testsTable.getTableHeader().setForeground(Color.decode("#FFFFFF"));
+
 
         // Initialize input fields
         patientIdField = createStyledTextField();
@@ -59,10 +72,10 @@ public class Laboratory extends JPanel {
         testTypeComboBox.setFont(MAIN_FONT);
 
         // Initialize buttons
-        addTestButton = createStyledButton("Add Test", "add_test.png");
-        updateResultButton = createStyledButton("Update Result", "update_result.png");
-        clearFieldsButton = createStyledButton("Clear Fields", "clear_fields.png");
-        generateReportButton = createStyledButton("Generate Report", "generate_report.png");
+        addTestButton = createStyledButton("Add Test");
+        updateResultButton = createStyledButton("Update Result");
+        clearFieldsButton = createStyledButton("Clear Fields");
+        generateReportButton = createStyledButton("Generate Report");
 
         // Initialize result details area
         resultDetailsArea = new JTextArea(5, 20);
@@ -78,12 +91,6 @@ public class Laboratory extends JPanel {
         updateResultButton.addActionListener(e -> updateResult());
         clearFieldsButton.addActionListener(e -> clearFields());
         generateReportButton.addActionListener(e -> generateReport());
-
-        // Add tooltips
-        addTestButton.setToolTipText("Add a new laboratory test");
-        updateResultButton.setToolTipText("Update the result for the selected test");
-        clearFieldsButton.setToolTipText("Clear all input fields");
-        generateReportButton.setToolTipText("Generate a report of all tests");
     }
 
     private void layoutComponents() {
@@ -100,15 +107,36 @@ public class Laboratory extends JPanel {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
 
         // Left Panel (Add Test Form)
+        JPanel leftPanel = createLeftPanel();
+        mainPanel.add(leftPanel, BorderLayout.WEST);
+
+        // Center Panel (Tests Table)
+        JScrollPane tableScrollPane = new JScrollPane(testsTable);
+        tableScrollPane.setBorder(createStyledTitledBorder("Laboratory Tests"));
+        mainPanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        // Right Panel (Results)
+        JPanel rightPanel = createRightPanel();
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Status Bar
+        JPanel statusPanel = new JPanel(new BorderLayout());
+        statusPanel.add(statusLabel, BorderLayout.WEST);
+        add(statusPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createLeftPanel() {
         JPanel leftPanel = new JPanel(new GridBagLayout());
-        leftPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(darkMode.getPrimaryColor()), "Add New Test", TitledBorder.LEFT, TitledBorder.TOP, TITLE_FONT, darkMode.getTextColor()));
+        leftPanel.setBorder(createStyledTitledBorder("Add New Test"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        addLabelAndField(leftPanel, gbc, "Patient ID:", patientIdField);
+        addLabelAndField(leftPanel, gbc, "Hospital ID:", patientIdField);
         addLabelAndField(leftPanel, gbc, "Test Name:", testNameField);
         addLabelAndField(leftPanel, gbc, "Test Type:", testTypeComboBox);
 
@@ -120,13 +148,12 @@ public class Laboratory extends JPanel {
         gbc.gridwidth = 2;
         leftPanel.add(buttonPanel, gbc);
 
-        // Center Panel (Tests Table)
-        JScrollPane tableScrollPane = new JScrollPane(testsTable);
-        tableScrollPane.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(darkMode.getPrimaryColor()), "Laboratory Tests", TitledBorder.LEFT, TitledBorder.TOP, TITLE_FONT, darkMode.getTextColor()));
+        return leftPanel;
+    }
 
-        // Right Panel (Results)
+    private JPanel createRightPanel() {
         JPanel rightPanel = new JPanel(new BorderLayout(10, 10));
-        rightPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(darkMode.getPrimaryColor()), "Test Results", TitledBorder.LEFT, TitledBorder.TOP, TITLE_FONT, darkMode.getTextColor()));
+        rightPanel.setBorder(createStyledTitledBorder("Test Results"));
         
         JPanel resultInputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         resultInputPanel.add(new JLabel("Result:"));
@@ -137,17 +164,7 @@ public class Laboratory extends JPanel {
         rightPanel.add(new JScrollPane(resultDetailsArea), BorderLayout.CENTER);
         rightPanel.add(generateReportButton, BorderLayout.SOUTH);
 
-        // Add panels to main panel
-        mainPanel.add(leftPanel, BorderLayout.WEST);
-        mainPanel.add(tableScrollPane, BorderLayout.CENTER);
-        mainPanel.add(rightPanel, BorderLayout.EAST);
-
-        add(mainPanel, BorderLayout.CENTER);
-
-        // Status Bar
-        JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.add(statusLabel, BorderLayout.WEST);
-        add(statusPanel, BorderLayout.SOUTH);
+        return rightPanel;
     }
 
     private void addLabelAndField(JPanel panel, GridBagConstraints gbc, String labelText, JComponent field) {
@@ -164,14 +181,22 @@ public class Laboratory extends JPanel {
         return textField;
     }
 
-    private JButton createStyledButton(String text, String iconName) {
+    private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
         button.setFont(MAIN_FONT);
         button.setFocusPainted(false);
-        // Load and set icon (replace with actual icon loading code)
-        // ImageIcon icon = new ImageIcon(getClass().getResource("/icons/" + iconName));
-        // button.setIcon(icon);
         return button;
+    }
+
+    private TitledBorder createStyledTitledBorder(String title) {
+        return BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(darkMode.getBorderColor()),
+            title,
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            TITLE_FONT,
+            darkMode.getTitleTextColor()
+        );
     }
 
     private void addTest() {
@@ -275,6 +300,9 @@ public class Laboratory extends JPanel {
         testsTable.setForeground(darkMode.getTextColor());
         testsTable.getTableHeader().setBackground(darkMode.getPrimaryColor());
         testsTable.getTableHeader().setForeground(darkMode.getTextColor());
+        testsTable.setGridColor(darkMode.getBorderColor());
+        testsTable.setSelectionBackground(darkMode.getPrimaryColor().brighter());
+        testsTable.setSelectionForeground(darkMode.getTextColor());
 
         // Update text field colors
         updateTextFieldColors(patientIdField);
@@ -294,38 +322,71 @@ public class Laboratory extends JPanel {
         // Update text area colors
         resultDetailsArea.setBackground(darkMode.getCardBackgroundColor());
         resultDetailsArea.setForeground(darkMode.getTextColor());
+        resultDetailsArea.setCaretColor(darkMode.getTextColor());
 
         // Update status label colors
         statusLabel.setForeground(darkMode.getTextColor());
 
         // Update panel colors
-        for (Component comp : getComponents()) {
-            if (comp instanceof JPanel) {
-                updatePanelColors((JPanel) comp);
-            }
-        }
+        updatePanelColors(this);
+
+        // Update titled borders
+        updateTitledBorders();
 
         repaint();
     }
 
     private void updateTextFieldColors(JTextField textField) {
-        textField.setBackground(darkMode.getCardBackgroundColor());
-        textField.setForeground(darkMode.getTextColor());
-        textField.setCaretColor(darkMode.getTextColor());
+        textField.setBackground(darkMode.getInputBackgroundColor());
+        textField.setForeground(darkMode.getInputTextColor());
+        textField.setCaretColor(darkMode.getInputTextColor());
+        textField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(darkMode.getBorderColor()),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
     }
 
     private void updateButtonColors(JButton button) {
-        button.setBackground(darkMode.getPrimaryColor());
-        button.setForeground(darkMode.getTextColor());
+        button.setBackground(darkMode.getButtonBackgroundColor());
+        button.setForeground(darkMode.getButtonTextColor());
+        button.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(darkMode.getBorderColor()),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
     }
 
-    private void updatePanelColors(JPanel panel) {
-        panel.setBackground(darkMode.getBackgroundColor());
-        for (Component comp : panel.getComponents()) {
-            if (comp instanceof JLabel) {
+    private void updatePanelColors(Container container) {
+        for (Component comp : container.getComponents()) {
+            if (comp instanceof JPanel) {
+                comp.setBackground(darkMode.getBackgroundColor());
+                updatePanelColors((Container) comp);
+            } else if (comp instanceof JLabel) {
                 comp.setForeground(darkMode.getTextColor());
-            } else if (comp instanceof JPanel) {
-                updatePanelColors((JPanel) comp);
+            } else if (comp instanceof JScrollPane) {
+                comp.setBackground(darkMode.getBackgroundColor());
+                JViewport viewport = ((JScrollPane) comp).getViewport();
+                viewport.setBackground(darkMode.getBackgroundColor());
+                Component[] components = viewport.getComponents();
+                for (Component component : components) {
+                    component.setBackground(darkMode.getBackgroundColor());
+                    if (component instanceof JTextComponent) {
+                        ((JTextComponent) component).setForeground(darkMode.getTextColor());
+                        ((JTextComponent) component).setCaretColor(darkMode.getTextColor());
+                    }
+                }
+            }
+        }
+    }
+
+    private void  updateTitledBorders() {
+        for (Component comp : getComponents()) {
+            if (comp instanceof JPanel) {
+                Border border = ((JPanel) comp).getBorder();
+                if (border instanceof TitledBorder) {
+                    TitledBorder titledBorder = (TitledBorder) border;
+                    titledBorder.setTitleColor(darkMode.getTitleTextColor());
+                    titledBorder.setBorder(BorderFactory.createLineBorder(darkMode.getBorderColor()));
+                }
             }
         }
     }
