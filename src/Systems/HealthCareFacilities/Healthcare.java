@@ -32,8 +32,18 @@ public class Healthcare extends JPanel {
         initComponents();
         layoutComponents();
         updateColors();
-    }
 
+        // Remove this duplicate setLayout call
+        // setLayout(new BorderLayout(10, 10));
+        // Remove this duplicate setBorder call
+        // setBorder(new EmptyBorder(20, 20, 20, 20));
+        
+        // Remove this line as it overrides the dark mode background
+        // setBackground(Color.WHITE);
+
+        setVisible(true);
+        System.out.println("Healthcare panel constructed");
+    }
 
     private void initComponents() {
         // Initialize table
@@ -72,22 +82,40 @@ public class Healthcare extends JPanel {
         statusLabel.setFont(MAIN_FONT);
 
         // Add action listeners
-        addFacilityButton.addActionListener(e -> addFacility());
-        viewDetailsButton.addActionListener(e -> viewFacilityDetails());
-        clearFieldsButton.addActionListener(e -> clearFields());
-        editFacilityButton.addActionListener(e -> editFacility());
+        addFacilityButton.addActionListener(e -> {
+            System.out.println("Add Facility button clicked");
+            addFacility();
+        });
+        viewDetailsButton.addActionListener(e -> {
+            System.out.println("View Details button clicked");
+            viewFacilityDetails();
+        });
+        clearFieldsButton.addActionListener(e -> {
+            System.out.println("Clear Fields button clicked");
+            clearFields();
+        });
+        editFacilityButton.addActionListener(e -> {
+            System.out.println("Edit Facility button clicked");
+            editFacility();
+        });
 
         // Add search functionality
-        searchField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                String searchText = searchField.getText().toLowerCase();
-                filterTable(searchText);
-            }
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
         });
     }
 
+    private void search() {
+        String searchText = searchField.getText().toLowerCase();
+        System.out.println("Searching for: " + searchText);
+        filterTable(searchText);
+    }
+
     private void layoutComponents() {
+        // Clear the existing layout
+        removeAll();
         setLayout(new BorderLayout(10, 10));
 
         // Header
@@ -123,7 +151,13 @@ public class Healthcare extends JPanel {
         searchPanel.add(new JLabel("Search: "));
         searchPanel.add(searchField);
         mainPanel.add(searchPanel, BorderLayout.NORTH);
+
+        // Ensure the panel is visible and revalidate the layout
+        setVisible(true);
+        revalidate();
+        repaint();
     }
+
 
     private JPanel createLeftPanel() {
         JPanel leftPanel = new JPanel(new GridBagLayout());
@@ -259,8 +293,7 @@ public class Healthcare extends JPanel {
     }
 
     private void filterTable(String searchText) {
-        DefaultTableModel model = (DefaultTableModel) facilitiesTable.getModel();
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
         facilitiesTable.setRowSorter(sorter);
 
         if (searchText.length() == 0) {
@@ -268,9 +301,9 @@ public class Healthcare extends JPanel {
         } else {
             try {
                 sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
-            } catch (PatternSyntaxException e) {
-                showError("Invalid search pattern: " + e.getMessage());
-                sorter.setRowFilter(null);
+            } catch (PatternSyntaxException pse) {
+                System.err.println("Bad regex pattern: " + pse.getMessage());
+                showError("Invalid search pattern");
             }
         }
     }
@@ -327,17 +360,15 @@ public class Healthcare extends JPanel {
         updateComponentColors(facilityDetailsArea, darkMode.getCardBackgroundColor(), darkMode.getTextColor());
         statusLabel.setForeground(darkMode.getTextColor());
 
-        for (Component comp : getComponents()) {
-            if (comp instanceof JPanel) {
-                updatePanelColors((JPanel) comp);
-            }
-        }
+        updatePanelColors(this);
 
+        revalidate();
         repaint();
     }
 
     private void updateComponentColors(Component component, Color backgroundColor, Color foregroundColor) {
         component.setBackground(backgroundColor);
+        
         component.setForeground(foregroundColor);
     }
 
@@ -349,12 +380,17 @@ public class Healthcare extends JPanel {
     private void updateButtonColors(JButton button) {
         updateComponentColors(button, darkMode.getPrimaryColor(), darkMode.getTextColor());
     }
+
     public void refreshData() {
-        // Add any necessary refresh logic here
-        // For example, you might want to update the table data or reset some fields
+        System.out.println("Refreshing Healthcare Facilities data");
         tableModel.setRowCount(0);
-        // Add logic to repopulate the table with fresh data
+        // Add logic to repopulate the table with fresh data if needed
         updateStatus("Healthcare Facilities data refreshed");
+        
+        // Ensure the panel is visible and revalidate the layout
+        setVisible(true);
+        revalidate();
+        repaint();
     }
 
     private void updatePanelColors(JPanel panel) {
@@ -372,5 +408,12 @@ public class Healthcare extends JPanel {
                 updateComponentColors(comp, darkMode.getCardBackgroundColor(), darkMode.getTextColor());
             }
         }
+    }
+
+    // Add this method to handle panel activation
+    public void onActivate() {
+        System.out.println("Healthcare panel activated");
+        refreshData();
+        // Add any other initialization or refresh logic here
     }
 }

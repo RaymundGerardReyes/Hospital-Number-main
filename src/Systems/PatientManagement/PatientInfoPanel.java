@@ -13,15 +13,12 @@ public class PatientInfoPanel extends JPanel {
     private JTable patientTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
-    private JButton editButton, deleteButton, saveButton, cancelButton;
+    private JButton addButton, editButton, deleteButton, saveButton, cancelButton;
     private JComboBox<String> sortComboBox;
     private List<Patient> patients;
     private Patient editingPatient;
     private int editingRow = -1;
     private DarkMode darkMode;
-
-    private JScrollPane tableScrollPane;
-    private JPanel buttonPanel;
 
     private static final String[] COLUMN_NAMES = {
         "Name", "Age", "Birthday", "Sex", "Contact", "Email", "Street Address", "City", "State", "ZIP Code",
@@ -29,32 +26,36 @@ public class PatientInfoPanel extends JPanel {
         "Insurance Provider", "Policy Number", "Additional Notes", "Hospital ID"
     };
 
-    // PatientInfoPanel.java - Constructor Initialization
-public PatientInfoPanel(DarkMode darkMode) {
-    this.darkMode = darkMode;
-    this.patients = new ArrayList<>(); // Initialize patient list
-    setLayout(new BorderLayout());
-    setBorder(new EmptyBorder(20, 20, 20, 20));
+    public PatientInfoPanel(DarkMode darkMode) {
+        this.darkMode = darkMode;
+        this.patients = new ArrayList<>();
+        setLayout(new BorderLayout());
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setPreferredSize(new Dimension(800, 600));
 
-    initComponents();     // Step 1: Initialize components
-    layoutComponents();   // Step 2: Set up layout
-    addListeners();       // Step 3: Add event listeners
-    loadDummyData();      // Optional: Load dummy data for testing
-    updateColors();       // Apply dark mode styling
-}
+        initComponents();
+        layoutComponents();
+        addListeners();
+        loadDummyData();
+        updateColors();
 
+        // Add this line to ensure the panel is visible
+        setVisible(true);
+        System.out.println("PatientInfoPanel constructed");
+    }
 
     private void initComponents() {
         tableModel = new DefaultTableModel(COLUMN_NAMES, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return editingRow == row;
             }
         };
         patientTable = new JTable(tableModel);
         patientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         searchField = new JTextField(20);
+        addButton = new JButton("Add Patient");
         editButton = new JButton("Edit");
         deleteButton = new JButton("Delete");
         saveButton = new JButton("Save");
@@ -65,90 +66,50 @@ public PatientInfoPanel(DarkMode darkMode) {
         cancelButton.setVisible(false);
     }
 
-   // PatientInfoPanel.java - Example layoutComponents Method
-private void layoutComponents() {
-    JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-    topPanel.add(new JLabel("Search: "));
-    topPanel.add(searchField);
-    topPanel.add(new JLabel("Sort by: "));
-    topPanel.add(sortComboBox);
+    private void layoutComponents() {
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topPanel.add(new JLabel("Search: "));
+        topPanel.add(searchField);
+        topPanel.add(new JLabel("Sort by: "));
+        topPanel.add(sortComboBox);
 
-    JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-    buttonPanel.add(editButton);
-    buttonPanel.add(deleteButton);
-    buttonPanel.add(saveButton);
-    buttonPanel.add(cancelButton);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(addButton);
+        buttonPanel.add(editButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
 
-    JScrollPane tableScrollPane = new JScrollPane(patientTable);
+        JScrollPane tableScrollPane = new JScrollPane(patientTable);
 
-    add(topPanel, BorderLayout.NORTH);     // Top panel with search and sort
-    add(tableScrollPane, BorderLayout.CENTER); // Center with patient table
-    add(buttonPanel, BorderLayout.SOUTH);  // Bottom panel with CRUD buttons
-}
-
-    // Dashboard.java - Corrected Action Listener for Switching Panels
-    // Dashboard.java - Corrected Action Listener for Switching Panels
-    private ActionListener createActionListener(String panelName) {
-    return e -> {
-        System.out.println("Button clicked for panel: " + panelName); // Debug info
-        showPanel(panelName.toLowerCase().replace(" ", ""));
-    };
+        add(topPanel, BorderLayout.NORTH);
+        add(tableScrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    private void addListeners() {
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
+        });
 
-    private void showPanel(String panelName) {
-        // Implement the logic to switch between different panels
-        // You can use a switch-case statement or any other method to handle the panel switching
-        // For example, you can have a HashMap or a list of Panel objects and use the panelName as the key
-        // Then, you can retrieve the corresponding Panel object and set it as the visible component of the container
-        // Or, you can use a CardLayout and add the Panel objects to the CardLayout and then show the desired Panel
-    
-        // Example implementation using a HashMap
-        Map<String, JPanel> panelMap = new HashMap<>();
-        // Add Panel objects to the panelMap with their corresponding panel names
-        // For example:
-        // panelMap.put("dashboard", dashboardPanel);
-        // panelMap.put("patientinfo", patientInfoPanel);
-        // panelMap.put("settings", settingsPanel);
-    
-        // Retrieve the corresponding Panel object from the panelMap using the panelName
-        JPanel panel = panelMap.get(panelName);
-    
-        // Set the panel as the visible component of the container
-        // For example, if you are using a CardLayout:
-        // cardLayout.showCard(container, panelName);
-        // Or, if you are using a JFrame:
-        // container.setContentPane(panel);
-        // container.revalidate();
+        sortComboBox.addActionListener(e -> sortTable());
+
+        addButton.addActionListener(e -> addNewPatient());
+        editButton.addActionListener(e -> editSelectedPatient());
+        deleteButton.addActionListener(e -> deleteSelectedPatient());
+        saveButton.addActionListener(e -> saveEditedPatient());
+        cancelButton.addActionListener(e -> cancelEdit());
+
+        // Add this listener to log when the panel becomes visible
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                System.out.println("PatientInfoPanel is now visible");
+            }
+        });
     }
-
-    // PatientInfoPanel.java - Corrected addListeners Method
-private void addListeners() {
-    // Search field listener
-    searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-        public void changedUpdate(javax.swing.event.DocumentEvent e) { search(); }
-        public void removeUpdate(javax.swing.event.DocumentEvent e) { search(); }
-        public void insertUpdate(javax.swing.event.DocumentEvent e) { search(); }
-    });
-
-    // Sort combo box listener
-    sortComboBox.addActionListener(e -> sortTable());
-
-    // CRUD buttons listeners
-    editButton.addActionListener(e -> editSelectedPatient());
-    deleteButton.addActionListener(e -> deleteSelectedPatient());
-    saveButton.addActionListener(e -> saveEditedPatient());
-    cancelButton.addActionListener(e -> cancelEdit());
-
-    // Test button to confirm PatientInfoPanel displays
-    JButton testButton = new JButton("Test Output");
-    testButton.addActionListener(e -> {
-        System.out.println("Test button clicked - output should display."); // Debug
-        JOptionPane.showMessageDialog(this, "PatientInfoPanel is displayed correctly.");
-    });
-    add(testButton, BorderLayout.SOUTH); // Temporarily add for debugging
-}
-
 
     private void search() {
         String searchTerm = searchField.getText().toLowerCase();
@@ -175,6 +136,18 @@ private void addListeners() {
         sortKeys.add(new RowSorter.SortKey(columnIndex, SortOrder.ASCENDING));
         sorter.setSortKeys(sortKeys);
         sorter.sort();
+    }
+
+    private void addNewPatient() {
+        Patient newPatient = new Patient("", 0, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "");
+        patients.add(newPatient);
+        addPatientToTable(newPatient);
+        int newRow = patients.size() - 1;
+        editingRow = newRow;
+        editingPatient = newPatient;
+        enableEditMode(true);
+        patientTable.setRowSelectionInterval(newRow, newRow);
+        patientTable.scrollRectToVisible(patientTable.getCellRect(newRow, 0, true));
     }
 
     private void editSelectedPatient() {
@@ -223,19 +196,12 @@ private void addListeners() {
 
     private void enableEditMode(boolean enable) {
         patientTable.setEnabled(!enable);
+        addButton.setVisible(!enable);
         editButton.setVisible(!enable);
         deleteButton.setVisible(!enable);
         saveButton.setVisible(enable);
         cancelButton.setVisible(enable);
-        if (enable) {
-            for (int i = 0; i < COLUMN_NAMES.length; i++) {
-                patientTable.getColumnModel().getColumn(i).setCellEditor(new DefaultCellEditor(new JTextField()));
-            }
-        } else {
-            for (int i = 0; i < COLUMN_NAMES.length; i++) {
-                patientTable.getColumnModel().getColumn(i).setCellEditor(null);
-            }
-        }
+        tableModel.fireTableDataChanged();
     }
 
     private void updatePatientFromTable(Patient patient, int row) {
@@ -293,6 +259,7 @@ private void addListeners() {
         sortComboBox.setBackground(darkMode.getCardBackgroundColor());
         sortComboBox.setForeground(darkMode.getTextColor());
 
+        updateButtonColors(addButton);
         updateButtonColors(editButton);
         updateButtonColors(deleteButton);
         updateButtonColors(saveButton);
@@ -305,6 +272,13 @@ private void addListeners() {
         button.setBackground(darkMode.getPrimaryColor());
         button.setForeground(darkMode.getTextColor());
         button.setFocusPainted(false);
+    }
+
+    public void refreshData() {
+        System.out.println("Refreshing PatientInfoPanel data");
+        search(); // This will reload the table with current data
+        revalidate();
+        repaint();
     }
 
     // Inner class to represent a Patient
@@ -359,19 +333,23 @@ private void addListeners() {
         public String getZipCode() { return zipCode; }
         public void setZipCode(String zipCode) { this.zipCode = zipCode; }
         public String getEmergencyContactName() { return emergencyContactName; }
-        public void setEmergencyContactName(String emergencyContactName) { this.emergencyContactName = emergencyContactName; }
+        public void setEmergencyContactName(String emergencyContactName) { 
+            this.emergencyContactName = emergencyContactName;
+        }
         public String getEmergencyContactRelationship() { return emergencyContactRelationship; }
-        public void setEmergencyContactRelationship(String emergencyContactRelationship) { this.emergencyContactRelationship = emergencyContactRelationship; }
+        public void setEmergencyContactRelationship(String emergencyContactRelationship) {
+            this.emergencyContactRelationship = emergencyContactRelationship;
+        }
         public String getEmergencyContactPhone() { return emergencyContactPhone; }
-        public void setEmergencyContactPhone(String emergencyContactPhone) { this.emergencyContactPhone = emergencyContactPhone; }
+        public void setEmergencyContactPhone(String emergencyContactPhone) {
+            this.emergencyContactPhone = emergencyContactPhone;
+        }
         public String getInsuranceProvider() { return insuranceProvider; }
         public void setInsuranceProvider(String insuranceProvider) { this.insuranceProvider = insuranceProvider; }
         public String getPolicyNumber() { return policyNumber; }
         public void setPolicyNumber(String policyNumber) { this.policyNumber = policyNumber; }
         public String getAdditionalNotes() { return additionalNotes; }
-        public void setAdditionalNotes(String additionalNotes) { this.additionalNotes = 
-
- additionalNotes; }
+        public void setAdditionalNotes(String additionalNotes) { this.additionalNotes = additionalNotes; }
         public String getHospitalId() { return hospitalId; }
         public void setHospitalId(String hospitalId) { this.hospitalId = hospitalId; }
     }

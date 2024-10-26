@@ -1,7 +1,7 @@
 package Systems.HospitalID;
 
 import Systems.Dashboard.DarkMode;
-
+import Systems.Dashboard.Dashboard;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -416,5 +416,9 @@ public class HospitalIDPanel extends JPanel {
     public void refreshData() {
         clearFields();
         outputArea.setText("Hospital ID panel refreshed.");
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(Dashboard::new);
     }
 }

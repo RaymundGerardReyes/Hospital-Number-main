@@ -33,12 +33,15 @@ public class Dashboard extends JFrame {
     private final PharmacyPanel pharmacyPanel;
     private final FinancePanel financePanel;
 
+    private final PatientInfoPanel patientInfoPanel;
 
     private JButton currentButton;
     private JLabel titleLabel;
     private JToggleButton darkModeToggle;
     private DarkMode darkMode;
-    private final PatientInfoTable patientInfoPanel;
+
+    private Color defaultButtonColor = new Color(240, 240, 240);
+    private Color highlightColor = new Color(220, 220, 220);
 
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI Light", Font.PLAIN, 24);
@@ -62,7 +65,8 @@ public class Dashboard extends JFrame {
         healthcareFacilitiesPanel = new Healthcare(darkMode);
         pharmacyPanel = new PharmacyPanel(darkMode);
         financePanel = new FinancePanel(darkMode);
-        patientInfoPanel = new PatientInfoTable(darkMode);
+        patientInfoPanel = new PatientInfoPanel(darkMode);
+        
 
         JPanel leftPanel = createLeftPanel();
         leftScrollPane = new JScrollPane(leftPanel);
@@ -87,7 +91,6 @@ public class Dashboard extends JFrame {
         contentPanel.add(homePanel, "home");
         contentPanel.add(consultationParentPanel, "consultation");
         contentPanel.add(hospitalIDPanel, "hospitalid");
-        // Ensure PatientInfoPanel is added correctly
         contentPanel.add(patientInfoPanel, "patientinfo");
         contentPanel.add(reportsPanel, "reports");
         contentPanel.add(laboratoryPanel, "laboratory");
@@ -111,8 +114,8 @@ public class Dashboard extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(darkMode.getBackgroundColor());
-        panel.setBorder(new EmptyBorder(30, -50, 20, 20));
-
+        panel.setBorder(new EmptyBorder(30, 20, 20, 20));
+    
         // Add logo and company name
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         logoPanel.setOpaque(false);
@@ -120,21 +123,21 @@ public class Dashboard extends JFrame {
         Image scaledImage = logoIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
         JLabel logoLabel = new JLabel(new ImageIcon(scaledImage));
         logoPanel.add(logoLabel);
-
-        JLabel companyName = new JLabel("Logo name");
+    
+        JLabel companyName = new JLabel("MyCare");
         companyName.setForeground(darkMode.getTextColor());
         companyName.setFont(TITLE_FONT);
-        logoPanel.add(Box.createHorizontalStrut(4));
+        logoPanel.add(Box.createHorizontalStrut(10));
         logoPanel.add(companyName);
-
+    
         panel.add(logoPanel);
         panel.add(Box.createVerticalStrut(20));
-
+    
         // Create clock and date panel
         JPanel clockPanel = createClockPanel();
         panel.add(clockPanel);
         panel.add(Box.createVerticalStrut(20));
-
+    
         // Create buttons for left panel with icons and text
         String[][] buttonData = {
             {"Home", "\uD83C\uDFE0"},
@@ -154,13 +157,34 @@ public class Dashboard extends JFrame {
             panel.add(button);
             panel.add(Box.createVerticalStrut(10));
         
-            // Add action listeners to buttons
-            button.addActionListener(createActionListener(data[0].toLowerCase()));
+            // Add action listener to button
+            String panelName = data[0].toLowerCase().replace(" ", "");
+            button.addActionListener(e -> {
+                showPanel(panelName);
+                highlightButton(panelName);
+                updateTitle(panelName);
+            });
+    
+            // Special case for Patient Information and Healthcare Facility
+            if (data[0].equals("Patient Information")) {
+                button.addActionListener(e -> {
+                    showPanel("patientinfo");
+                    highlightButton("patientinfo");
+                    updateTitle("patientinfo");
+                });
+            } else if (data[0].equals("Healthcare Facility")) {
+                button.addActionListener(e -> {
+                    showPanel("healthcarefacilities");
+                    highlightButton("healthcarefacilities");
+                    updateTitle("healthcarefacilities");
+                });
+            }
         }
         panel.add(Box.createVerticalGlue());
-
+    
         return panel;
     }
+
 
     private JButton createButton(String text, String icon) {
         JButton button = new JButton();
@@ -206,13 +230,10 @@ public class Dashboard extends JFrame {
     
 
     private void showPanel(String panelName) {
-        System.out.println("Attempting to display panel: " + panelName); // Debug print
         CardLayout cardLayout = (CardLayout) ((JPanel) rightPanel.getComponent(1)).getLayout();
         cardLayout.show((JPanel) rightPanel.getComponent(1), panelName);
     
-        System.out.println("Panel displayed: " + panelName); // Debug confirmation
-    
-        rightPanel.revalidate(); // Ensure the layout is refreshed
+        rightPanel.revalidate();
         rightPanel.repaint();
     
         // Refresh specific panels when shown
@@ -223,9 +244,8 @@ public class Dashboard extends JFrame {
             case "finance":
                 financePanel.refreshData();
                 break;
-             case "patientinfo":
-                ((PatientInfoTable) patientInfoPanel).updateColors();
-                ((PatientInfoTable) patientInfoPanel).refreshData(); // Add this line
+            case "patientinfo":
+                patientInfoPanel.refreshData();
                 break;
             case "healthcarefacilities":
                 healthcareFacilitiesPanel.refreshData();
@@ -239,20 +259,28 @@ public class Dashboard extends JFrame {
         }
     }
     
+    
     private void highlightButton(String panelName) {
         if (currentButton != null) {
-            currentButton.setBackground(darkMode.getBackgroundColor());
+            currentButton.setBackground(defaultButtonColor);
         }
         for (Component comp : ((Container) leftScrollPane.getViewport().getView()).getComponents()) {
-            if (comp instanceof JButton && ((JButton) comp).getText().toLowerCase().contains(panelName)) {
-                currentButton = (JButton) comp;
-                break;
+            if (comp instanceof JButton) {
+                JButton button = (JButton) comp;
+                String buttonText = button.getText().toLowerCase();
+                if (buttonText.contains(panelName) || 
+                    (panelName.equals("patientinfo") && buttonText.contains("patient information")) ||
+                    (panelName.equals("healthcarefacilities") && buttonText.contains("healthcare facility"))) {
+                    currentButton = button;
+                    break;
+                }
             }
         }
         if (currentButton != null) {
-            currentButton.setBackground(darkMode.getPrimaryColor());
+            currentButton.setBackground(highlightColor);
         }
     }
+
 
     private void updateTitle(String panelName) {
         String title = switch (panelName) {
@@ -483,3 +511,4 @@ public class Dashboard extends JFrame {
         SwingUtilities.invokeLater(Dashboard::new);
     }
 }
+ 
