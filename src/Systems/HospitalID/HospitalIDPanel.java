@@ -1,7 +1,17 @@
 package Systems.HospitalID;
 
 import Systems.Dashboard.DarkMode;
-import Systems.Dashboard.Dashboard;
+
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.SQLSyntaxErrorException;
+
+import Systems.Database.DatabaseConnection;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,30 +24,20 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.regex.Pattern;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
-import javax.swing.text.JTextComponent;
-import javax.swing.text.MaskFormatter;
-import java.awt.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Period;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 public class HospitalIDPanel extends JPanel {
     private DarkMode darkMode;
-    private JTextField nameField, streetAddressField, cityField, zipCodeField;
-    private JFormattedTextField birthdayField, phoneField;
+    private JTextField LastNameField, FirstNameField, MiddleNameField, ExtensionNameField, streetAddressField, cityField, zipCodeField;
+    private JFormattedTextField birthdayField, phoneField, emergencyContactPhoneField;
     private JTextArea notesArea;
     private JComboBox<String> sexComboBox, stateComboBox;
     private JTextField hospitalIdField, ageField, emailField;
-    private JTextField emergencyContactNameField, emergencyContactRelationshipField, emergencyContactPhoneField;
+    private JTextField emergencyContactNameField, emergencyContactRelationshipField;
     private JTextField insuranceProviderField, policyNumberField;
     private JButton generateButton, clearButton, saveButton;
     private JTextArea outputArea;
@@ -45,6 +45,8 @@ public class HospitalIDPanel extends JPanel {
 
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
+    private static final Color FONT_EMERALD_COLOR = new Color(0, 103, 66);
+    
 
     public HospitalIDPanel(DarkMode darkMode) {
         this.darkMode = darkMode;
@@ -55,31 +57,74 @@ public class HospitalIDPanel extends JPanel {
         initComponents();
         layoutComponents();
         addListeners();
+        updateColors(darkMode);
+    }
+
+    
+
+    private Connection getConnection() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+        } catch (ClassNotFoundException e) {
+            throw new SQLException("MySQL JDBC Driver not found", e);
+        }
     }
 
     private void initComponents() {
-        nameField = createStyledTextField();
+        LastNameField = createStyledTextField();
+        FirstNameField = createStyledTextField();
+        MiddleNameField = createStyledTextField();
+        ExtensionNameField = createStyledTextField();
+
         streetAddressField = createStyledTextField();
         cityField = createStyledTextField();
         zipCodeField = createStyledTextField();
-        
+
         try {
             MaskFormatter birthdayFormatter = new MaskFormatter("##/##/####");
             birthdayField = new JFormattedTextField(birthdayFormatter);
             birthdayField.setFont(MAIN_FONT);
-            
-            MaskFormatter phoneFormatter = new MaskFormatter("(###) ###-####");
+
+            MaskFormatter phoneFormatter = new MaskFormatter("####-###-####");
             phoneField = new JFormattedTextField(phoneFormatter);
             phoneField.setFont(MAIN_FONT);
+
+            MaskFormatter emergencyPhoneFormatter = new MaskFormatter("####-###-####");
+            emergencyContactPhoneField = new JFormattedTextField(emergencyPhoneFormatter);
+            emergencyContactPhoneField.setFont(MAIN_FONT);
         } catch (ParseException e) {
             e.printStackTrace();
+            emergencyContactPhoneField = new JFormattedTextField();
+            emergencyContactPhoneField.setFont(MAIN_FONT);
         }
 
         sexComboBox = new JComboBox<>(new String[]{"Male", "Female", "Other", "Prefer not to say"});
         sexComboBox.setFont(MAIN_FONT);
+
+        String[] regions = {
+            "Select Region",
+            "NCR - National Capital Region", 
+            "CAR - Cordillera Administrative Region", 
+            "Region I - Ilocos Region", 
+            "Region II - Cagayan Valley", 
+            "Region III - Central Luzon", 
+            "Region IV-A - CALABARZON", 
+            "Region IV-B - MIMAROPA", 
+            "Region V - Bicol Region", 
+            "Region VI - Western Visayas", 
+            "Region VII - Central Visayas", 
+            "Region VIII - Eastern Visayas", 
+            "Region IX - Zamboanga Peninsula", 
+            "Region X - Northern Mindanao", 
+            "Region XI - Davao Region", 
+            "Region XII - SOCCSKSARGEN", 
+            "Region XIII - Caraga", 
+            "BARMM - Bangsamoro Autonomous Region in Muslim Mindanao"
+        };
         
-        String[] states = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"};
-        stateComboBox = new JComboBox<>(states);
+        
+        stateComboBox = new JComboBox<>(regions);
         stateComboBox.setFont(MAIN_FONT);
 
         notesArea = new JTextArea(4, 20);
@@ -95,7 +140,6 @@ public class HospitalIDPanel extends JPanel {
 
         emergencyContactNameField = createStyledTextField();
         emergencyContactRelationshipField = createStyledTextField();
-        emergencyContactPhoneField = createStyledTextField();
 
         insuranceProviderField = createStyledTextField();
         policyNumberField = createStyledTextField();
@@ -120,7 +164,10 @@ public class HospitalIDPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        addLabelAndField(inputPanel, gbc, "Name:", nameField);
+        addLabelAndField(inputPanel, gbc, "Last Name:", LastNameField);
+        addLabelAndField(inputPanel, gbc, "First Name:", FirstNameField);
+        addLabelAndField(inputPanel, gbc, "Middle Name:", MiddleNameField);
+        addLabelAndField(inputPanel, gbc, "Extension Name: (If applicable)", ExtensionNameField);
         addLabelAndField(inputPanel, gbc, "Birthday:", birthdayField);
         addLabelAndField(inputPanel, gbc, "Age:", ageField);
         addLabelAndField(inputPanel, gbc, "Sex:", sexComboBox);
@@ -135,7 +182,7 @@ public class HospitalIDPanel extends JPanel {
         addLabelAndField(inputPanel, gbc, "Emergency Contact Phone:", emergencyContactPhoneField);
         addLabelAndField(inputPanel, gbc, "Insurance Provider:", insuranceProviderField);
         addLabelAndField(inputPanel, gbc, "Policy Number:", policyNumberField);
-        addLabelAndField(inputPanel, gbc, "Additional Notes:", new JScrollPane(notesArea));
+        addLabelAndField(inputPanel, gbc, "Medical History:", new JScrollPane(notesArea));
         addLabelAndField(inputPanel, gbc, "Hospital ID:", hospitalIdField);
 
         JScrollPane scrollPane = new JScrollPane(inputPanel);
@@ -189,33 +236,51 @@ public class HospitalIDPanel extends JPanel {
     }
 
     private void generateHospitalId() {
+        String lastName = LastNameField.getText().trim();
+        String birthday = birthdayField.getText().trim();
+        String age = ageField.getText().trim();
+
+        if (checkExistingPatient(lastName, birthday, age)) {
+            showMessage("Information already exists. Patient is already registered.", true);
+            return;
+        }
+
         if (!validateFields()) {
             return;
         }
 
-        String name = nameField.getText().trim();
-        String birthday = birthdayField.getText().trim();
-        String address = streetAddressField.getText().trim();
-        String sex = (String) sexComboBox.getSelectedItem();
-
-        String key = name + "|" + birthday + "|" + address + "|" + sex;
-        if (patientDatabase.containsKey(key)) {
-            String existingId = patientDatabase.get(key);
-            hospitalIdField.setText(existingId);
-            showMessage("Existing patient found. Hospital ID: " + existingId, false);
-        } else {
-            String newId = generateUniqueId();
-            patientDatabase.put(key, newId);
-            hospitalIdField.setText(newId);
-            showMessage("New patient registered. Hospital ID: " + newId, false);
-        }
+        String newId = generateUniqueId();
+        hospitalIdField.setText(newId);
+        showMessage("New patient registered. Hospital ID: " + newId, false);
     }
 
-    private boolean validateFields() {
-        if (nameField.getText().trim().isEmpty() || !nameField.getText().matches("^[a-zA-Z\\s-']+$")) {
-            showMessage("Please enter a valid name (letters, spaces, hyphens, and apostrophes only).", true);
-            return false;
+
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/hospital_management";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "Raymund@Estaca01"; // Replace with your actual password
+
+    
+   // Method to check if a patient with the same Last Name, Birthday, and Age exists in the database
+   private boolean checkExistingPatient(String lastName, String birthday, String age) {
+    String query = "SELECT COUNT(*) FROM patients WHERE last_name = ? AND birthday = STR_TO_DATE(?, '%m/%d/%Y') AND age = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
+        
+        pstmt.setString(1, lastName);
+        pstmt.setString(2, birthday);
+        pstmt.setString(3, age);
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            return rs.next() && rs.getInt(1) > 0;
         }
+    } catch (SQLException e) {
+        handleDatabaseError("Error checking existing patient", e);
+        return false;
+    }
+}
+
+
+    private boolean validateFields() {
         if (!isValidDate(birthdayField.getText())) {
             showMessage("Please enter a valid birthday (MM/DD/YYYY).", true);
             return false;
@@ -249,11 +314,11 @@ public class HospitalIDPanel extends JPanel {
             return false;
         }
         if (!isValidPhoneNumber(emergencyContactPhoneField.getText())) {
-            showMessage("Please enter a valid emergency contact phone number ((XXX) XXX-XXXX).", true);
+            showMessage("Please enter a valid emergency contact phone number (####-###-####).", true);
             return false;
         }
         if (!isValidPhoneNumber(phoneField.getText())) {
-            showMessage("Please enter a valid phone number ((XXX) XXX-XXXX).", true);
+            showMessage("Please enter a valid phone number (####-###-####).", true);
             return false;
         }
 
@@ -261,14 +326,11 @@ public class HospitalIDPanel extends JPanel {
     }
 
     private boolean isValidPhoneNumber(String phoneNumber) {
-        String phoneNumberRegex = "^\\(\\d{3}\\) \\d{3}-\\d{4}$";
-        Pattern pat = Pattern.compile(phoneNumberRegex);
-        if (phoneNumber == null) {
-            return false;
-        }
-        return pat.matcher(phoneNumber).matches();
+        String phoneNumberRegex = "^\\d{4}-\\d{3}-\\d{4}$";
+        return phoneNumber != null && phoneNumber.matches(phoneNumberRegex);
     }
 
+  
     private boolean isValidDate(String date) {
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
         sdf.setLenient(false);
@@ -280,21 +342,46 @@ public class HospitalIDPanel extends JPanel {
         }
     }
 
+
+    public void refreshData() {
+        // Logic to refresh the data displayed in the panel
+        // For example, you can fetch the updated data from a database or API
+        // and update the UI components accordingly
+
+        // Example:
+        // Fetch updated data from a database or API
+        // List<HospitalID> updatedHospitalIDs = fetchUpdatedHospitalIDs();
+
+        // Clear the existing data in the panel
+        // this.removeAll();
+
+        // Add the updated data to the panel
+        // for (HospitalID hospitalID : updatedHospitalIDs) {
+        //     JLabel label = new JLabel(hospitalID.toString());
+        //     this.add(label);
+        // }
+
+        // Revalidate and repaint the panel
+        // this.revalidate();
+        // this.repaint();
+    }
+
     private boolean isValidEmail(String email) {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
-        Pattern pat = Pattern.compile(emailRegex);
-        if (email == null)
-            return false;
-        return pat.matcher(email).matches();
+        return email != null && email.matches(emailRegex);
     }
-
 
     private String generateUniqueId() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        String datePart = sdf.format(new Date());
-        String randomPart = String.format("%04d", new Random().nextInt(10000));
-        return "H" + datePart + randomPart;
+        Random random = new Random();
+        StringBuilder idBuilder = new StringBuilder();
+    
+        for (int i = 0; i < 10; i++) { // Generates a 10-digit random number
+            idBuilder.append(random.nextInt(10)); // Append a random digit (0-9)
+        }
+    
+        return idBuilder.toString();
     }
+    
 
     private void savePatientInfo() {
         String hospitalId = hospitalIdField.getText().trim();
@@ -302,33 +389,73 @@ public class HospitalIDPanel extends JPanel {
             showMessage("Please generate a Hospital ID first.", true);
             return;
         }
-
-        StringBuilder info = new StringBuilder();
-        info.append("Patient Information Saved:\n");
-        info.append("Hospital ID: ").append(hospitalId).append("\n");
-        info.append("Name: ").append(nameField.getText()).append("\n");
-        info.append("Birthday: ").append(birthdayField.getText()).append("\n");
-        info.append("Age: ").append(ageField.getText()).append("\n");
-        info.append("Sex: ").append(sexComboBox.getSelectedItem()).append("\n");
-        info.append("Phone: ").append(phoneField.getText()).append("\n");
-        info.append("Email: ").append(emailField.getText()).append("\n");
-        info.append("Address: ").append(streetAddressField.getText()).append(", ")
-            .append(cityField.getText()).append(", ")
-            
-            .append(stateComboBox.getSelectedItem()).append(" ")
-            .append(zipCodeField.getText()).append("\n");
-        info.append("Emergency Contact: ").append(emergencyContactNameField.getText())
-            .append(" (").append(emergencyContactRelationshipField.getText()).append(") ")
-            .append(emergencyContactPhoneField.getText()).append("\n");
-        info.append("Insurance Provider: ").append(insuranceProviderField.getText()).append("\n");
-        info.append("Policy Number: ").append(policyNumberField.getText()).append("\n");
-        info.append("Additional Notes: ").append(notesArea.getText()).append("\n");
-
-        showMessage(info.toString(), false);
+    
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "INSERT INTO patients (hospital_id, last_name, first_name, middle_name, extension_name, birthday, age, sex, phone, email, " +
+                     "street_address, city, state, zip_code, emergency_contact_name, emergency_contact_relationship, emergency_contact_phone, " +
+                     "insurance_provider, policy_number, additional_notes) " +
+                     "VALUES (?, ?, ?, ?, ?, STR_TO_DATE(?, '%m/%d/%Y'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+                     "ON DUPLICATE KEY UPDATE " +
+                     "last_name = VALUES(last_name), first_name = VALUES(first_name), middle_name = VALUES(middle_name), extension_name = VALUES(extension_name), " +
+                     "birthday = STR_TO_DATE(VALUES(birthday), '%m/%d/%Y'), age = VALUES(age), sex = VALUES(sex), phone = VALUES(phone), " +
+                     "email = VALUES(email), street_address = VALUES(street_address), city = VALUES(city), state = VALUES(state), " +
+                     "zip_code = VALUES(zip_code), emergency_contact_name = VALUES(emergency_contact_name), emergency_contact_relationship = VALUES(emergency_contact_relationship), " +
+                     "emergency_contact_phone = VALUES(emergency_contact_phone), insurance_provider = VALUES(insurance_provider), " +
+                     "policy_number = VALUES(policy_number), additional_notes = VALUES(additional_notes)")) {
+    
+            // Set values for the prepared statement
+            pstmt.setString(1, hospitalId);
+            pstmt.setString(2, LastNameField.getText().trim());
+            pstmt.setString(3, FirstNameField.getText().trim());
+            pstmt.setString(4, MiddleNameField.getText().trim());
+            pstmt.setString(5, ExtensionNameField.getText().trim());
+            pstmt.setString(6, birthdayField.getText());
+            pstmt.setInt(7, Integer.parseInt(ageField.getText().trim()));
+            pstmt.setString(8, (String) sexComboBox.getSelectedItem());
+            pstmt.setString(9, phoneField.getText().trim());
+            pstmt.setString(10, emailField.getText().trim());
+            pstmt.setString(11, streetAddressField.getText().trim());
+            pstmt.setString(12, cityField.getText().trim());
+            pstmt.setString(13, (String) stateComboBox.getSelectedItem());
+            pstmt.setString(14, zipCodeField.getText().trim());
+            pstmt.setString(15, emergencyContactNameField.getText().trim());
+            pstmt.setString(16, emergencyContactRelationshipField.getText().trim());
+            pstmt.setString(17, emergencyContactPhoneField.getText().trim());
+            pstmt.setString(18, insuranceProviderField.getText().trim());
+            pstmt.setString(19, policyNumberField.getText().trim());
+            pstmt.setString(20, notesArea.getText().trim());
+    
+            int affectedRows = pstmt.executeUpdate();
+    
+            if (affectedRows > 0) {
+                showMessage("Patient information saved successfully to the database.", false);
+            } else {
+                showMessage("Failed to save patient information to the database.", true);
+            }
+        } catch (SQLException e) {
+            handleDatabaseError("Error saving patient information", e);
+        }
     }
+    
+
+    private void handleDatabaseError(String message, SQLException e) {
+        e.printStackTrace();
+        String errorDetails = e.getMessage();
+        if (e instanceof SQLSyntaxErrorException) {
+            errorDetails = "Database syntax error. Please check your SQL query.";
+        } else if (e instanceof SQLIntegrityConstraintViolationException) {
+            errorDetails = "Database constraint violation. Possible duplicate entry.";
+        }
+        showMessage(message + ": " + errorDetails, true);
+    }
+    
 
     private void clearFields() {
-        nameField.setText("");
+        LastNameField.setText("");
+        FirstNameField.setText("");
+        MiddleNameField.setText("");
+        ExtensionNameField.setText("");
         birthdayField.setText("");
         ageField.setText("");
         sexComboBox.setSelectedIndex(0);
@@ -365,24 +492,19 @@ public class HospitalIDPanel extends JPanel {
                 updateComponentColors((Container) comp);
             } else if (comp instanceof JLabel) {
                 comp.setForeground(darkMode.getTextColor());
-            } else if (comp instanceof JTextField || comp instanceof JTextArea || comp instanceof JFormattedTextField) {
+            } else if (comp instanceof JTextComponent) {
                 comp.setBackground(darkMode.getCardBackgroundColor());
                 comp.setForeground(darkMode.getTextColor());
-                if (comp instanceof JTextComponent) {
-                    ((JTextComponent) comp).setCaretColor(darkMode.getTextColor());
-                }
+                ((JTextComponent) comp).setCaretColor(darkMode.getTextColor());
             } else if (comp instanceof JButton) {
-                JButton button = (JButton) comp;
-                button.setBackground(darkMode.getPrimaryColor());
-                button.setForeground(Color.WHITE);
+                comp.setBackground(darkMode.getPrimaryColor());
+                comp.setForeground(Color.WHITE);
             } else if (comp instanceof JComboBox) {
                 comp.setBackground(darkMode.getCardBackgroundColor());
                 comp.setForeground(darkMode.getTextColor());
             } else if (comp instanceof JScrollPane) {
                 comp.setBackground(darkMode.getBackgroundColor());
-                JViewport viewport = ((JScrollPane) comp).getViewport();
-                viewport.setBackground(darkMode.getBackgroundColor());
-                updateComponentColors(viewport);
+                updateComponentColors(((JScrollPane) comp).getViewport());
             }
         }
     }
@@ -396,29 +518,37 @@ public class HospitalIDPanel extends JPanel {
     private JButton createStyledButton(String text) {
         JButton button = new JButton(text);
         button.setFont(MAIN_FONT);
-        button.setFocusPainted(true);
+        button.setFocusPainted(false);
+        button.setBackground(FONT_EMERALD_COLOR);
+        button.setForeground(Color.WHITE);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        
+        // Remove the hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                // Do nothing
+            }
+    
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                // Do nothing
+            }
+        });
+    
         return button;
     }
 
+
     private TitledBorder createTitledBorder(String title) {
         TitledBorder border = BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(darkMode.getBorderColor()),
-            title,
-            TitledBorder.LEFT,
-            TitledBorder.TOP,
-            TITLE_FONT,
-            darkMode.getTextColor()
+                BorderFactory.createLineBorder(darkMode.getBorderColor()),
+                title,
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                TITLE_FONT,
+                darkMode.getTextColor()
         );
         border.setTitleColor(darkMode.getTextColor());
         return border;
-    }
-
-    public void refreshData() {
-        clearFields();
-        outputArea.setText("Hospital ID panel refreshed.");
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(Dashboard::new);
     }
 }

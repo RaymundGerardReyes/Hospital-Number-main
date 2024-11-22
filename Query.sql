@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS patients (
+    hospital_id VARCHAR(20) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    birthday DATE NOT NULL,
+    age INT NOT NULL,
+    sex ENUM('Male', 'Female', 'Other', 'Prefer not to say') NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    street_address VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state CHAR(2) NOT NULL,
+    zip_code VARCHAR(10) NOT NULL,
+    emergency_contact_name VARCHAR(100) NOT NULL,
+    emergency_contact_relationship VARCHAR(50) NOT NULL,
+    emergency_contact_phone VARCHAR(20) NOT NULL,
+    insurance_provider VARCHAR(100),
+    policy_number VARCHAR(50),
+    additional_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);hospital_managementhospital_managementpatientspatientsusersinformation_schemainformation_schemamysqlmysqlperformance_schemaperformance_schemahospital_managementinformation_schemamysqlperformance_schemahospital_managementhospital_management

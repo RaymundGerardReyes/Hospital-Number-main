@@ -3,13 +3,17 @@ package Systems.Dashboard;
 import java.awt.Color;
 import javax.swing.JComponent;
 
-public class DarkMode {
-    private boolean isDarkMode = true; // Set to true by default
-    private static final Color DARK_BLUE = new Color(0, 20, 60); // Dark blue color
+public class DarkMode implements DarkModeInterface {
+    private boolean isDarkMode;
+    private static final Color DARK_BLUE = new Color(0, 20, 60);
     private static final Color LIGHT_BLUE = new Color(100, 150, 200);
     private static final Color WHITE = Color.WHITE;
     private static final Color LIGHT_GRAY = new Color(200, 200, 200);
 
+    private Color primaryColor;
+    private Color backgroundColor;
+    private Color textColor;
+    private Color cardBackgroundColor;
 
     private Color inputBackgroundColor;
     private Color inputTextColor;
@@ -19,17 +23,32 @@ public class DarkMode {
     private Color titleTextColor;
 
     public DarkMode() {
-        this.isDarkMode = false; // Initialize with default value
+        this(false);
     }
 
-     // Getter for the defined color
-     public Color getTitleTextColor() {
-        return titleTextColor;
+    public DarkMode(boolean isDarkMode) {
+        this.isDarkMode = isDarkMode;
+        initializeColors();
     }
 
-    // Setter for the defined color (optional)
-    public void setTitleTextColor(Color color) {
-        this.titleTextColor = color;
+    private void initializeColors() {
+        if (isDarkMode) {
+            primaryColor = new Color(0, 103, 66).darker();
+            backgroundColor = new Color(50, 50, 50);
+            textColor = Color.WHITE;
+            cardBackgroundColor = new Color(60, 60, 60);
+        } else {
+            primaryColor = new Color(0, 103, 66);
+            backgroundColor = Color.WHITE;
+            textColor = Color.BLACK;
+            cardBackgroundColor = Color.WHITE;
+        }
+        inputBackgroundColor = isDarkMode ? DARK_BLUE : WHITE;
+        inputTextColor = isDarkMode ? WHITE : Color.BLACK;
+        buttonBackgroundColor = primaryColor;
+        buttonTextColor = isDarkMode ? WHITE : Color.BLACK;
+        borderColor = Color.GRAY;
+        titleTextColor = textColor;
     }
 
     public boolean isDarkMode() {
@@ -37,26 +56,33 @@ public class DarkMode {
     }
 
     public void setDarkMode(boolean darkMode) {
-        this.isDarkMode = darkMode;
+        if (this.isDarkMode != darkMode) {
+            this.isDarkMode = darkMode;
+            initializeColors();
+        }
     }
-
-    // Other methods...
-
 
     public void toggleDarkMode() {
-        isDarkMode = !isDarkMode;
+        setDarkMode(!isDarkMode);
     }
 
+    @Override
+    public boolean isEnabled() {
+        return isDarkMode;
+    }
+
+    @Override
     public Color getBackgroundColor() {
-        return isDarkMode ? DARK_BLUE : WHITE;
+        return backgroundColor;
+    }
+
+    @Override
+    public Color getTextColor() {
+        return textColor;
     }
 
     public Color getCardBackgroundColor() {
-        return isDarkMode ? new Color(0, 30, 80) : LIGHT_GRAY;
-    }
-
-    public Color getTextColor() {
-        return isDarkMode ? WHITE : Color.BLACK;
+        return cardBackgroundColor;
     }
 
     public Color getMutedTextColor() {
@@ -64,7 +90,7 @@ public class DarkMode {
     }
 
     public Color getPrimaryColor() {
-        return isDarkMode ? LIGHT_BLUE : DARK_BLUE;
+        return primaryColor;
     }
 
     public void updateComponentColors(JComponent component) {
@@ -89,14 +115,13 @@ public class DarkMode {
     }
 
     public Color getBorderColor() {
-        if (borderColor == null) {
-            // Set a default color if the border color is null
-            borderColor = Color.GRAY;
-        }
         return borderColor;
     }
 
-    // Setters for the defined colors (optional)
+    public Color getTitleTextColor() {
+        return titleTextColor;
+    }
+
     public void setInputBackgroundColor(Color color) {
         this.inputBackgroundColor = color;
     }
@@ -109,6 +134,10 @@ public class DarkMode {
         this.buttonBackgroundColor = color;
     }
 
+    public boolean isDarkModeEnabled() {
+        return isDarkMode;
+    }
+
     public void setButtonTextColor(Color color) {
         this.buttonTextColor = color;
     }
@@ -117,5 +146,7 @@ public class DarkMode {
         this.borderColor = color;
     }
 
-
+    public void setTitleTextColor(Color color) {
+        this.titleTextColor = color;
+    }
 }

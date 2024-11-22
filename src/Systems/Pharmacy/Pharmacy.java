@@ -140,18 +140,24 @@ public class Pharmacy {
             // Add more cases as needed
         }
     }
-
     
-    
-    public int manageInventory(String productId, String action) {
+    public int manageInventory(String productId, String action, int quantity) {
         switch (action) {
             case "check":
                 return inventoryManager.checkStockLevel(productId);
-            case "reorder":
-                inventoryManager.reorderProduct(productId, 100); // Example quantity
-                return 0; // Indicate successful reorder
+            case "remove":
+                int currentStock = inventoryManager.checkStockLevel(productId);
+                if (currentStock >= quantity) {
+                    inventoryManager.reorderProduct(productId, -quantity);
+                    return currentStock - quantity;
+                } else {
+                    return -1; // Not enough stock
+                }
+            case "add":
+                inventoryManager.reorderProduct(productId, quantity);
+                return inventoryManager.checkStockLevel(productId);
             default:
-                return -1; // Indicate invalid action
+                return -1; // Invalid action
         }
     }
 

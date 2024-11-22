@@ -2,16 +2,14 @@ package Systems.Dashboard;
 
 import Systems.Consultation.ConsultationParentPanel;
 import Systems.Finance.FinancePanel;
-import Systems.HealthCareFacilities.Healthcare;
+import Systems.HealthCareFacilities.HealthcareFacilitiesPanel;
 import Systems.HospitalID.HospitalIDPanel;
-import Systems.Laboratory.Laboratory;
+import Systems.Laboratory.LaboratoryPanel;
 import Systems.Login.LoginPanel;
-import Systems.PatientManagement.PatientInfoPanel;
-import Systems.PatientManagement.PatientManagement;
+import Systems.PatientManagement.PatientInformationPanel;
 import Systems.Pharmacy.PharmacyPanel;
 import Systems.Reports.ReportsPanel;
 import Systems.Home.Home;
-import Systems.PatientManagement.PatientInfoTable;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -28,25 +26,28 @@ public class Dashboard extends JFrame {
     private final ConsultationParentPanel consultationParentPanel;
     private final HospitalIDPanel hospitalIDPanel;
     private final ReportsPanel reportsPanel;
-    private final Laboratory laboratoryPanel;
-    private final Healthcare healthcareFacilitiesPanel;
+    private final LaboratoryPanel laboratoryPanel;
+    private final HealthcareFacilitiesPanel healthcareFacilitiesPanel;
     private final PharmacyPanel pharmacyPanel;
     private final FinancePanel financePanel;
-
-    private final PatientInfoPanel patientInfoPanel;
+    private final PatientInformationPanel patientInfoPanel;
 
     private JButton currentButton;
     private JLabel titleLabel;
     private JToggleButton darkModeToggle;
     private DarkMode darkMode;
 
-    private Color defaultButtonColor = new Color(240, 240, 240);
-    private Color highlightColor = new Color(220, 220, 220);
+    private Color defaultButtonColor = new Color(240, 240, 240);  // Light gray
+    private Color highlightColor = new Color(173, 216, 230);     // Light blue
+    private Color hoverColor = new Color(220, 220, 220);         // Slightly darker than default
 
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI Light", Font.PLAIN, 24);
     private static final Font BUTTON_FONT = new Font("Segoe UI", Font.PLAIN, 16);
     private static final Font CLOCK_FONT = new Font("Segoe UI Light", Font.PLAIN, 18);
+    private static final Color BUTTON_BLUE_COLOR = new Color(70, 129, 244); // Blue (#4681F4)
+    private static final Color FONT_EMERALD_COLOR = new Color(0, 103, 66); // Emerald color
+
 
     public Dashboard() {
         setTitle("MyCare HealthCare Solutions");
@@ -61,13 +62,12 @@ public class Dashboard extends JFrame {
         consultationParentPanel = new ConsultationParentPanel();
         hospitalIDPanel = new HospitalIDPanel(darkMode);
         reportsPanel = new ReportsPanel(darkMode);
-        laboratoryPanel = new Laboratory(darkMode);
-        healthcareFacilitiesPanel = new Healthcare(darkMode);
+        laboratoryPanel = new LaboratoryPanel(darkMode);
+        healthcareFacilitiesPanel = new HealthcareFacilitiesPanel(darkMode);
         pharmacyPanel = new PharmacyPanel(darkMode);
         financePanel = new FinancePanel(darkMode);
-        patientInfoPanel = new PatientInfoPanel(darkMode);
+        patientInfoPanel = new PatientInformationPanel(darkMode);
         
-
         JPanel leftPanel = createLeftPanel();
         leftScrollPane = new JScrollPane(leftPanel);
         leftScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -113,32 +113,25 @@ public class Dashboard extends JFrame {
     private JPanel createLeftPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(darkMode.getBackgroundColor());
-        panel.setBorder(new EmptyBorder(30, 20, 20, 20));
-    
-        // Add logo and company name
-        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(0, 20, 0, 20));
+
+        // Logo panel
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         logoPanel.setOpaque(false);
-        ImageIcon logoIcon = new ImageIcon("path/to/your/logo.png");
-        Image scaledImage = logoIcon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+        ImageIcon logoIcon = new ImageIcon("C://Users//User//Downloads//MCHS logo.png");
+        Image scaledImage = logoIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
         JLabel logoLabel = new JLabel(new ImageIcon(scaledImage));
         logoPanel.add(logoLabel);
-    
-        JLabel companyName = new JLabel("MyCare");
-        companyName.setForeground(darkMode.getTextColor());
-        companyName.setFont(TITLE_FONT);
-        logoPanel.add(Box.createHorizontalStrut(10));
-        logoPanel.add(companyName);
-    
         panel.add(logoPanel);
         panel.add(Box.createVerticalStrut(20));
-    
-        // Create clock and date panel
+
+        // Clock and date panel
         JPanel clockPanel = createClockPanel();
         panel.add(clockPanel);
         panel.add(Box.createVerticalStrut(20));
-    
-        // Create buttons for left panel with icons and text
+
+        // Buttons
         String[][] buttonData = {
             {"Home", "\uD83C\uDFE0"},
             {"Consultation", "\uD83D\uDC68\u200D⚕\uFE0F"},
@@ -156,86 +149,19 @@ public class Dashboard extends JFrame {
             JButton button = createButton(data[0], data[1]);
             panel.add(button);
             panel.add(Box.createVerticalStrut(10));
-        
-            // Add action listener to button
-            String panelName = data[0].toLowerCase().replace(" ", "");
-            button.addActionListener(e -> {
-                showPanel(panelName);
-                highlightButton(panelName);
-                updateTitle(panelName);
-            });
-    
-            // Special case for Patient Information and Healthcare Facility
-            if (data[0].equals("Patient Information")) {
-                button.addActionListener(e -> {
-                    showPanel("patientinfo");
-                    highlightButton("patientinfo");
-                    updateTitle("patientinfo");
-                });
-            } else if (data[0].equals("Healthcare Facility")) {
-                button.addActionListener(e -> {
-                    showPanel("healthcarefacilities");
-                    highlightButton("healthcarefacilities");
-                    updateTitle("healthcarefacilities");
-                });
-            }
         }
+
         panel.add(Box.createVerticalGlue());
-    
         return panel;
     }
-
-
-    private JButton createButton(String text, String icon) {
-        JButton button = new JButton();
-        button.setLayout(new BorderLayout(10, 0));
-
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
-        iconLabel.setForeground(darkMode.getTextColor());
-        button.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(text);
-        textLabel.setFont(BUTTON_FONT);
-        textLabel.setForeground(darkMode.getTextColor());
-        button.add(textLabel, BorderLayout.CENTER);
-
-        button.setBackground(darkMode.getBackgroundColor());
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setMaximumSize(new Dimension(240, 50));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(darkMode.getPrimaryColor());
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                if (button != currentButton) {
-                    button.setBackground(darkMode.getBackgroundColor());
-                }
-            }
-        });
-
-        return button;
-    }
-
-    private ActionListener createActionListener(String panelName) {
-        return e -> {
-            System.out.println("Button clicked for panel: " + panelName);
-            showPanel(panelName.toLowerCase().replace(" ", ""));
-        };
-    }
     
-
     private void showPanel(String panelName) {
         CardLayout cardLayout = (CardLayout) ((JPanel) rightPanel.getComponent(1)).getLayout();
         cardLayout.show((JPanel) rightPanel.getComponent(1), panelName);
-    
+
         rightPanel.revalidate();
         rightPanel.repaint();
-    
+
         // Refresh specific panels when shown
         switch (panelName) {
             case "pharmacy":
@@ -245,7 +171,7 @@ public class Dashboard extends JFrame {
                 financePanel.refreshData();
                 break;
             case "patientinfo":
-                patientInfoPanel.refreshData();
+                patientInfoPanel.loadPatientData();  // Explicitly call loadPatientData when showing this panel
                 break;
             case "healthcarefacilities":
                 healthcareFacilitiesPanel.refreshData();
@@ -259,28 +185,85 @@ public class Dashboard extends JFrame {
         }
     }
     
+    private JButton createButton(String text, String icon) {
+        JButton button = new JButton();
+        button.setLayout(new BorderLayout(10, 0));
+        button.setBackground(new Color(70, 129, 244)); // Set background to #4681f4
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setMaximumSize(new Dimension(240, 50));
+        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     
-    private void highlightButton(String panelName) {
-        if (currentButton != null) {
-            currentButton.setBackground(defaultButtonColor);
-        }
-        for (Component comp : ((Container) leftScrollPane.getViewport().getView()).getComponents()) {
-            if (comp instanceof JButton) {
-                JButton button = (JButton) comp;
-                String buttonText = button.getText().toLowerCase();
-                if (buttonText.contains(panelName) || 
-                    (panelName.equals("patientinfo") && buttonText.contains("patient information")) ||
-                    (panelName.equals("healthcarefacilities") && buttonText.contains("healthcare facility"))) {
-                    currentButton = button;
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+        iconLabel.setForeground(Color.WHITE); // Set icon color to white for better contrast
+        button.add(iconLabel, BorderLayout.WEST);
+    
+        JLabel textLabel = new JLabel(text);
+        textLabel.setFont(BUTTON_FONT);
+        textLabel.setForeground(Color.WHITE); // Set text color to white for better contrast
+        button.add(textLabel, BorderLayout.CENTER);
+    
+        String panelName = text.toLowerCase().replace(" ", "");
+    
+        button.addActionListener(e -> {
+            switch (panelName) {
+                case "patientinformation":
+                    showPanel("patientinfo");
+                    highlightButton(button);
+                    updateTitle("patientinfo");
                     break;
+                case "healthcarefacility":
+                    showPanel("healthcarefacilities");
+                    highlightButton(button);
+                    updateTitle("healthcarefacilities");
+                    break;
+                case "signout":
+                    signOut();
+                    break;
+                default:
+                    showPanel(panelName);
+                    highlightButton(button);
+                    updateTitle(panelName);
+                    break;
+            }
+        });
+    
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                if (button != currentButton) {
+                    button.setBackground(new Color(100, 159, 255)); // Lighter shade for hover
+                }
+            }
+    
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                if (button != currentButton) {
+                    button.setBackground(new Color(70, 129, 244)); // Return to original color
+                }
+            }
+        });
+    
+        return button;
+    }
+
+    private void highlightButton(JButton selectedButton) {
+        if (currentButton != null) {
+            currentButton.setBackground(new Color(70, 129, 244)); // Reset to default blue color
+            for (Component comp : currentButton.getComponents()) {
+                if (comp instanceof JLabel) {
+                    comp.setForeground(Color.BLACK); // Reset to white text
                 }
             }
         }
-        if (currentButton != null) {
-            currentButton.setBackground(highlightColor);
+        currentButton = selectedButton;
+        currentButton.setBackground(new Color(40, 99, 214)); // Darker shade for selected button
+        for (Component comp : currentButton.getComponents()) {
+            if (comp instanceof JLabel) {
+                comp.setForeground(Color.GREEN); // Keep text white
+            }
         }
     }
-
 
     private void updateTitle(String panelName) {
         String title = switch (panelName) {
@@ -301,19 +284,18 @@ public class Dashboard extends JFrame {
     private JPanel createClockPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(darkMode.getBackgroundColor());
-        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        panel.setMaximumSize(new Dimension(240, 60));
+        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.setBackground(Color.WHITE);
 
         JLabel clockLabel = new JLabel();
-        clockLabel.setForeground(darkMode.getTextColor());
+        clockLabel.setForeground(Color.BLACK);
         clockLabel.setFont(CLOCK_FONT);
-        clockLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        clockLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel dateLabel = new JLabel();
-        dateLabel.setForeground(darkMode.getTextColor());
+        dateLabel.setForeground(Color.BLACK);
         dateLabel.setFont(CLOCK_FONT);
-        dateLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        dateLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         panel.add(clockLabel);
         panel.add(dateLabel);
@@ -342,43 +324,43 @@ public class Dashboard extends JFrame {
 
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(darkMode.getCardBackgroundColor());
+        panel.setBackground(new Color(0, 103, 66)); // Emerald color (#006742)
         panel.setBorder(new EmptyBorder(10, 20, 10, 20));
-
+    
         titleLabel = new JLabel("Dashboard");
         titleLabel.setFont(TITLE_FONT);
-        titleLabel.setForeground(darkMode.getTextColor());
+        titleLabel.setForeground(Color.WHITE); // Set text color to white for contrast
         panel.add(titleLabel, BorderLayout.WEST);
-
+    
         JPanel rightHeaderPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightHeaderPanel.setOpaque(false);
-
+    
         JTextField searchBar = new JTextField(20);
         searchBar.setFont(MAIN_FONT);
         searchBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(darkMode.getPrimaryColor()),
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)));
-        searchBar.setBackground(darkMode.getCardBackgroundColor());
-        searchBar.setForeground(darkMode.getTextColor());
+        searchBar.setBackground(Color.WHITE);
+        searchBar.setForeground(Color.BLACK); // Adjust text color in the search bar
         rightHeaderPanel.add(searchBar);
-
+    
         JButton notificationButton = new JButton("\uD83D\uDD14");
         notificationButton.setFont(MAIN_FONT);
         notificationButton.setFocusPainted(false);
         notificationButton.setBorderPainted(false);
-        notificationButton.setBackground(darkMode.getCardBackgroundColor());
-        notificationButton.setForeground(darkMode.getTextColor());
+        notificationButton.setBackground(Color.WHITE);
+        notificationButton.setForeground(Color.BLACK);
         notificationButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         rightHeaderPanel.add(notificationButton);
-
+    
         JPanel profilePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         profilePanel.setOpaque(false);
-
+    
         JLabel profileNameLabel = new JLabel("Dr. John Doe");
         profileNameLabel.setFont(MAIN_FONT);
-        profileNameLabel.setForeground(darkMode.getTextColor());
+        profileNameLabel.setForeground(Color.WHITE); // Adjust text color for header
         profilePanel.add(profileNameLabel);
-
+    
         darkModeToggle = new JToggleButton(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
         darkModeToggle.setFont(MAIN_FONT);
         darkModeToggle.addActionListener(e -> {
@@ -386,25 +368,25 @@ public class Dashboard extends JFrame {
             updateColors();
             darkModeToggle.setText(darkMode.isDarkMode() ? "Light Mode" : "Dark Mode");
         });
-        darkModeToggle.setBackground(darkMode.getCardBackgroundColor());
-        darkModeToggle.setForeground(darkMode.getTextColor());
+        darkModeToggle.setBackground(Color.WHITE);
+        darkModeToggle.setForeground(Color.BLACK);
         profilePanel.add(darkModeToggle);
-
+    
         JButton profileButton = new JButton("Profile \uD83D\uDC64");
         profileButton.setFont(MAIN_FONT);
         profileButton.setFocusPainted(false);
         profileButton.setBorderPainted(false);
-        profileButton.setBackground(darkMode.getCardBackgroundColor());
-        profileButton.setForeground(darkMode.getTextColor());
+        profileButton.setBackground(Color.WHITE);
+        profileButton.setForeground(Color.BLACK);
         profileButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         profilePanel.add(profileButton);
-
+    
         rightHeaderPanel.add(profilePanel);
         panel.add(rightHeaderPanel, BorderLayout.EAST);
-
+    
         return panel;
     }
-
+    
     private void toggleDarkMode() {
         darkMode.toggleDarkMode();
         updateColors();
@@ -416,43 +398,59 @@ public class Dashboard extends JFrame {
         updateLeftPanelColors();
         updateRightPanelColors();
         updateHeaderColors();
-    
+
         hospitalIDPanel.updateColors(darkMode);
         homePanel.updateColors(darkMode);
-        laboratoryPanel.updateColors();
+        laboratoryPanel.updateColors(darkMode);
         healthcareFacilitiesPanel.updateColors();
         patientInfoPanel.updateColors();
         pharmacyPanel.updateColors();
         financePanel.updateColors(darkMode);
         repaint();
+
+
+    // Ensure header panel color is not overwritten by dark mode
+    if (darkMode.isDarkMode()) {
+        updateHeaderColors(); // Use a specific method for header customization
+    } else {
+        updateHeaderColors(); // Reapply Emerald color in light mode
+    }
     }
 
-    private void updateLeftPanelColors() {
-        JPanel leftPanel = (JPanel) leftScrollPane.getViewport().getView();
-        leftPanel.setBackground(darkMode.getBackgroundColor());
-        for (Component comp : leftPanel.getComponents()) {
-            if (comp instanceof JButton) {
-                JButton button = (JButton) comp;
-                button.setBackground(darkMode.getBackgroundColor());
-                button.setForeground(darkMode.getTextColor());
-                for (Component innerComp : button.getComponents()) {
-                    if (innerComp instanceof JLabel) {
-                        innerComp.setForeground(darkMode.getTextColor());
-                    }
-                }
-            } else if (comp instanceof JLabel) {
-                comp.setForeground(darkMode.getTextColor());
-            } else if (comp instanceof JPanel) {
-                comp.setBackground(darkMode.getBackgroundColor());
-                for (Component innerComp : ((JPanel) comp).getComponents()) {
-                    if (innerComp instanceof JLabel) {
-                        innerComp.setForeground(darkMode.getTextColor());
-                    }
+ private void updateLeftPanelColors() {
+    JPanel leftPanel = (JPanel) leftScrollPane.getViewport().getView();
+    leftPanel.setBackground(darkMode.getBackgroundColor());
+    for (Component comp : leftPanel.getComponents()) {
+        if (comp instanceof JButton) {
+            JButton button = (JButton) comp;
+            if (button != currentButton) {
+                button.setBackground(defaultButtonColor);
+            }
+            for (Component innerComp : button.getComponents()) {
+                if (innerComp instanceof JLabel) {
+                    innerComp.setForeground(FONT_EMERALD_COLOR); // Reapply Emerald font color
                 }
             }
         }
     }
+}
 
+private void addLabelAndField(String labelText, JTextField field) {
+    JLabel label = new JLabel(labelText);
+    label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+    label.setForeground(Color.BLACK);
+    label.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+    JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+    fieldPanel.setOpaque(false);
+    fieldPanel.add(label);
+    fieldPanel.add(Box.createHorizontalStrut(10));
+    fieldPanel.add(field);
+
+    if (fieldPanel != null) {
+        add(fieldPanel);
+    }
+}
     private void updateRightPanelColors() {
         rightPanel.setBackground(darkMode.getBackgroundColor());
         for (Component comp : rightPanel.getComponents()) {
@@ -480,13 +478,15 @@ public class Dashboard extends JFrame {
     }
 
     private void updateHeaderColors() {
-        JPanel headerPanel = (JPanel) rightPanel.getComponent(0);
-        darkMode.updateComponentColors(headerPanel);
+        JPanel headerPanel = (JPanel) rightPanel.getComponent(0); // Get the header panel
+        headerPanel.setBackground(new Color(0, 103, 66)); // Set the header panel background to Emerald color (#006742)
+        titleLabel.setForeground(Color.WHITE); // Set the title label text color to white for contrast
+    
         for (Component comp : headerPanel.getComponents()) {
             if (comp instanceof JPanel) {
+                comp.setBackground(darkMode.getCardBackgroundColor());
                 for (Component innerComp : ((JPanel) comp).getComponents()) {
                     if (innerComp instanceof JLabel || innerComp instanceof JButton || innerComp instanceof JToggleButton) {
-                        innerComp.setBackground(darkMode.getCardBackgroundColor());
                         innerComp.setForeground(darkMode.getTextColor());
                     }
                 }
@@ -505,10 +505,8 @@ public class Dashboard extends JFrame {
             dispose();
         }
     }
-    
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Dashboard::new);
     }
 }
- 

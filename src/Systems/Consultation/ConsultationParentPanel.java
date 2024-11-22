@@ -7,6 +7,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
+import Systems.Consultation.PatientConsultationPanel;
+import Systems.Database.DatabaseConnection;;
 
 public class ConsultationParentPanel extends JPanel {
     private JTextPane transactionSlipPane;
@@ -15,6 +17,7 @@ public class ConsultationParentPanel extends JPanel {
     private ConsultationPanel consultationPanel;
     private DoctorPanel doctorPanel;
     private Map<String, JButton> tabButtons;
+    private PatientConsultationPanel patientConsultationPanel;
 
     private static final Color PRIMARY_COLOR = new Color(0, 123, 255);
     private static final Color SECONDARY_COLOR = new Color(108, 117, 125);
@@ -23,6 +26,8 @@ public class ConsultationParentPanel extends JPanel {
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 24);
     private static final Font SUBTITLE_FONT = new Font("Segoe UI", Font.PLAIN, 18);
+
+    private String activeTab = "Appointment Consultation"; // Track the active tab
 
     public ConsultationParentPanel() {
         setLayout(new BorderLayout(10, 10));
@@ -54,18 +59,26 @@ public class ConsultationParentPanel extends JPanel {
     }
 
     private JPanel createTabPanel() {
-        JPanel tabPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel tabPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         tabPanel.setOpaque(false);
-
+    
         tabButtons = new HashMap<>();
-        String[] tabs = {"Consultation", "Doctors"};
-
-        for (String tab : tabs) {
+        String[] tabs = {"Appointment Consultation", "Doctors", "Patient Consultation"};
+    
+        for (int i = 0; i < tabs.length; i++) {
+            String tab = tabs[i];
             JButton tabButton = createTabButton(tab);
             tabButtons.put(tab, tabButton);
             tabPanel.add(tabButton);
+    
+            if (i < tabs.length - 1) {
+                JSeparator separator = new JSeparator(JSeparator.VERTICAL);
+                separator.setPreferredSize(new Dimension(1, 30));
+                separator.setForeground(Color.WHITE);
+                tabPanel.add(separator);
+            }
         }
-
+    
         return tabPanel;
     }
 
@@ -77,12 +90,14 @@ public class ConsultationParentPanel extends JPanel {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+        button.setMargin(new Insets(5, 10, 5, 10));
+    
         button.addActionListener(e -> {
-            cardLayout.show(contentPanel, text);
+            activeTab = text;  // Update the active tab to the selected one
+            cardLayout.show(contentPanel, text); // Show the correct panel
             updateTabButtonStyles();
         });
-
+    
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -90,7 +105,7 @@ public class ConsultationParentPanel extends JPanel {
                     button.setBackground(PRIMARY_COLOR.brighter());
                 }
             }
-
+    
             @Override
             public void mouseExited(MouseEvent e) {
                 if (!button.getBackground().equals(SECONDARY_COLOR)) {
@@ -98,7 +113,7 @@ public class ConsultationParentPanel extends JPanel {
                 }
             }
         });
-
+    
         return button;
     }
 
@@ -109,12 +124,14 @@ public class ConsultationParentPanel extends JPanel {
         contentPanel.setBackground(BACKGROUND_COLOR);
 
         consultationPanel = new ConsultationPanel(this);
-        doctorPanel = new DoctorPanel(consultationPanel, this);
+        patientConsultationPanel = new PatientConsultationPanel(this);
+        DatabaseConnection dbConnection = new DatabaseConnection(); // You need to create this object
+        DoctorPanel doctorPanel = new DoctorPanel(consultationPanel, this, dbConnection);
 
-        contentPanel.add(consultationPanel, "Consultation");
+        contentPanel.add(consultationPanel, "Appointment Consultation");
         contentPanel.add(doctorPanel, "Doctors");
+        contentPanel.add(patientConsultationPanel, "Patient Consultation");
 
-        // Set initial active tab
         updateTabButtonStyles();
 
         return contentPanel;
@@ -149,9 +166,7 @@ public class ConsultationParentPanel extends JPanel {
     private void updateTabButtonStyles() {
         for (Map.Entry<String, JButton> entry : tabButtons.entrySet()) {
             JButton button = entry.getValue();
-            boolean isActive = contentPanel.getComponent(0).isVisible() && entry.getKey().equals("Consultation")
-                    || contentPanel.getComponent(1).isVisible() && entry.getKey().equals("Doctors");
-            button.setBackground(isActive ? SECONDARY_COLOR : PRIMARY_COLOR);
+            button.setBackground(entry.getKey().equals(activeTab) ? SECONDARY_COLOR : PRIMARY_COLOR);
         }
     }
 
@@ -162,7 +177,6 @@ public class ConsultationParentPanel extends JPanel {
             transactionSlipPane.setText(newText);
             transactionSlipPane.setCaretPosition(transactionSlipPane.getDocument().getLength());
 
-            // Provide visual feedback
             transactionSlipPane.setBackground(new Color(240, 255, 240)); // Light green background
             Timer timer = new Timer(1500, e -> transactionSlipPane.setBackground(Color.WHITE));
             timer.setRepeats(false);

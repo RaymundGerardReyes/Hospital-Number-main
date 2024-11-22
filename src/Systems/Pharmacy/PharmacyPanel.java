@@ -9,14 +9,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PharmacyPanel extends JPanel {
-    private Pharmacy pharmacy;
-    private DarkMode darkMode;
-    private JTabbedPane tabbedPane;
-    private JPanel posPanel, prescriptionPanel, inventoryPanel;
-    private JTextField productIdField, amountField;
-    private JComboBox<String> paymentMethodCombo;
-    private JTextArea outputArea;
-    private JButton processSaleButton, fillPrescriptionButton, checkInventoryButton, generateReportButton;
+    private final Pharmacy pharmacy;
+    private final DarkMode darkMode;
+    private final JTabbedPane tabbedPane;
+    private final JPanel posPanel, prescriptionPanel, inventoryPanel;
+    private final JTextField productIdField, amountField;
+    private final JComboBox<String> paymentMethodCombo;
+    private final JTextArea outputArea;
+    private final JButton processSaleButton, fillPrescriptionButton, checkInventoryButton, generateReportButton;
 
     public PharmacyPanel(DarkMode darkMode) {
         this.darkMode = darkMode;
@@ -24,16 +24,10 @@ public class PharmacyPanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        initComponents();
-        layoutComponents();
-        updateColors();
-    }
-
-    private void initComponents() {
         tabbedPane = new JTabbedPane();
-        posPanel = new JPanel(new GridBagLayout());
-        prescriptionPanel = new JPanel(new GridBagLayout());
-        inventoryPanel = new JPanel(new GridBagLayout());
+        posPanel = createPOSPanel();
+        prescriptionPanel = createPrescriptionPanel();
+        inventoryPanel = createInventoryPanel();
 
         productIdField = new JTextField(15);
         amountField = new JTextField(10);
@@ -41,19 +35,53 @@ public class PharmacyPanel extends JPanel {
         outputArea = new JTextArea(10, 30);
         outputArea.setEditable(false);
 
-        processSaleButton = new JButton("Process Sale");
-        fillPrescriptionButton = new JButton("Fill Prescription");
-        checkInventoryButton = new JButton("Check Inventory");
-        generateReportButton = new JButton("Generate Report");
+        processSaleButton = createButton("Process Sale", this::processSale);
+        fillPrescriptionButton = createButton("Fill Prescription", this::fillPrescription);
+        checkInventoryButton = createButton("Check Inventory", this::checkInventory);
+        generateReportButton = createButton("Generate Report", this::generateReport);
 
-        processSaleButton.addActionListener(e -> processSale());
-        fillPrescriptionButton.addActionListener(e -> fillPrescription());
-        checkInventoryButton.addActionListener(e -> checkInventory());
-        generateReportButton.addActionListener(e -> generateReport());
+        layoutComponents();
+        updateColors();
+    }
+
+    private JPanel createPOSPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        // Add components to panel
+        return panel;
+    }
+
+    private JPanel createPrescriptionPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        // Add components to panel
+        return panel;
+    }
+
+    private JPanel createInventoryPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        // Add components to panel
+        return panel;
+    }
+
+    private JButton createButton(String text, Runnable action) {
+        JButton button = new JButton(text);
+        button.addActionListener(e -> action.run());
+        return button;
     }
 
     private void layoutComponents() {
-        // POS Panel
+        layoutPOSPanel();
+        layoutPrescriptionPanel();
+        layoutInventoryPanel();
+
+        tabbedPane.addTab("Point of Sale", posPanel);
+        tabbedPane.addTab("Prescriptions", prescriptionPanel);
+        tabbedPane.addTab("Inventory", inventoryPanel);
+
+        add(tabbedPane, BorderLayout.NORTH);
+        add(new JScrollPane(outputArea), BorderLayout.CENTER);
+    }
+
+    private void layoutPOSPanel() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -77,89 +105,60 @@ public class PharmacyPanel extends JPanel {
         gbc.gridy++;
         gbc.gridwidth = 2;
         posPanel.add(processSaleButton, gbc);
+    }
 
-        // Prescription Panel
+    private void layoutPrescriptionPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         prescriptionPanel.add(fillPrescriptionButton, gbc);
+    }
 
-        // Inventory Panel
+    private void layoutInventoryPanel() {
+        GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         inventoryPanel.add(checkInventoryButton, gbc);
         gbc.gridy++;
         inventoryPanel.add(generateReportButton, gbc);
-
-        tabbedPane.addTab("Point of Sale", posPanel);
-        tabbedPane.addTab("Prescriptions", prescriptionPanel);
-        tabbedPane.addTab("Inventory", inventoryPanel);
-
-        add(tabbedPane, BorderLayout.NORTH);
-        add(new JScrollPane(outputArea), BorderLayout.CENTER);
     }
 
     private void processSale() {
         try {
             String productId = productIdField.getText();
             String paymentMethod = (String) paymentMethodCombo.getSelectedItem();
-            double amount;
+            double amount = Double.parseDouble(amountField.getText());
 
-            if (productId.isEmpty()) {
-                throw new IllegalArgumentException("Product ID cannot be empty.");
-            }
-
-            try {
-                amount = Double.parseDouble(amountField.getText());
-                if (amount <= 0) {
-                    throw new IllegalArgumentException("Amount must be greater than zero.");
-                }
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid amount entered.");
-            }
+            validateInput(productId, amount);
 
             pharmacy.processSale(productId, paymentMethod, amount);
             outputArea.setText("Sale processed successfully.");
             clearInputFields();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Process Sale Error", JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Process Sale Error", e.getMessage());
         }
     }
 
     private void fillPrescription() {
+        String prescriptionId = JOptionPane.showInputDialog("Enter Prescription ID:");
         try {
-            String prescriptionId = JOptionPane.showInputDialog("Enter Prescription ID:");
-            if (prescriptionId != null && !prescriptionId.isEmpty()) {
-                pharmacy.managePrescription(prescriptionId, "fill");
-                outputArea.setText("Prescription " + prescriptionId + " filled successfully.");
-            } else if (prescriptionId != null) {
-                throw new IllegalArgumentException("Prescription ID cannot be empty.");
-            }
+            validateInput(prescriptionId);
+            pharmacy.managePrescription(prescriptionId, "fill");
+            outputArea.setText("Prescription " + prescriptionId + " filled successfully.");
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Fill Prescription Error", JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Fill Prescription Error", e.getMessage());
         }
     }
 
     private void checkInventory() {
+        String productId = JOptionPane.showInputDialog("Enter Product ID:");
         try {
-            String productId = JOptionPane.showInputDialog("Enter Product ID:");
-            
-            if (productId != null && !productId.isEmpty()) {
-                if (pharmacy == null) {
-                    throw new IllegalStateException("Pharmacy object is not initialized.");
-                }
-
-                int stockLevel = pharmacy.manageInventory(productId, "check");
-                if (stockLevel < 0) {
-                    throw new IllegalArgumentException("Invalid product ID entered.");
-                } else {
-                    outputArea.setText("Stock level for product " + productId + ": " + stockLevel);
-                }
-            } else if (productId != null) {
-                throw new IllegalArgumentException("Product ID cannot be empty.");
-            }
+            validateInput(productId);
+            int stockLevel = pharmacy.manageInventory(productId, "check", 0);
+            outputArea.setText("Stock level for product " + productId + ": " + stockLevel);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage(), "Check Inventory Error", JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Check Inventory Error", e.getMessage());
         }
     }
 
@@ -175,7 +174,22 @@ public class PharmacyPanel extends JPanel {
                 outputArea.setText(report);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error generating report: " + e.getMessage(), "Report Error", JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Report Error", "Error generating report: " + e.getMessage());
+        }
+    }
+
+    private void validateInput(String... inputs) {
+        for (String input : inputs) {
+            if (input == null || input.isEmpty()) {
+                throw new IllegalArgumentException("Input cannot be empty.");
+            }
+        }
+    }
+
+    private void validateInput(String input, double amount) {
+        validateInput(input);
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero.");
         }
     }
 
@@ -202,10 +216,7 @@ public class PharmacyPanel extends JPanel {
         for (Component comp : panel.getComponents()) {
             if (comp instanceof JLabel) {
                 comp.setForeground(darkMode.getTextColor());
-            } else if (comp instanceof JTextField) {
-                comp.setBackground(darkMode.getCardBackgroundColor());
-                comp.setForeground(darkMode.getTextColor());
-            } else if (comp instanceof JComboBox) {
+            } else if (comp instanceof JTextField || comp instanceof JComboBox) {
                 comp.setBackground(darkMode.getCardBackgroundColor());
                 comp.setForeground(darkMode.getTextColor());
             }
@@ -218,7 +229,6 @@ public class PharmacyPanel extends JPanel {
     }
 
     public void refreshData() {
-        // Refresh data from the Pharmacy system
         clearInputFields();
         outputArea.setText("Pharmacy data refreshed.");
         // TODO: Implement actual data refresh logic
@@ -228,5 +238,9 @@ public class PharmacyPanel extends JPanel {
         productIdField.setText("");
         amountField.setText("");
         paymentMethodCombo.setSelectedIndex(0);
+    }
+
+    private void showErrorMessage(String title, String message) {
+        JOptionPane.showMessageDialog(this, "Error: " + message, title, JOptionPane.ERROR_MESSAGE);
     }
 }

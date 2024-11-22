@@ -1,0 +1,1 @@
+SELECT * FROM hospital_management.users;

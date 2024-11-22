@@ -1,167 +1,148 @@
 package Systems.Consultation;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import Systems.Database.DatabaseConnection;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.*;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.BorderFactory;
-import javax.swing.DefaultCellEditor;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.RowFilter;
-import javax.swing.border.EmptyBorder;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 
 public class DoctorPanel extends JPanel {
-
-    public static final String FILE_PATH = "src/Systems//Consultation/doctors.txt";
-
-    private static final String EDIT_LABEL = "Edit";
-    private static final String DELETE_LABEL = "Delete";
-    private static final String SAVE_LABEL = "Save";
-    private static final String UNDO_LABEL = "Undo";
-    private static final String REFRESH_LABEL = "Refresh";
     private static final Logger LOGGER = Logger.getLogger(DoctorPanel.class.getName());
-
-    private JTable doctorTable;
-    private DefaultTableModel model;
-    private ConsultationPanel consultationPanel;
-    private ConsultationParentPanel parentPanel;
-    private JTextField searchField;
-    private JTextField addDoctorField;
-    private JComboBox<String> specialistComboBox;
-    private JTextField maxPatientsField;
-    private JButton addButton;
-    private TableRowSorter<DefaultTableModel> sorter;
-    private Stack<Object[]> undoStack = new Stack<>();
-
     private static final Color DARK_BLUE = new Color(0, 50, 100);
     private static final Color LIGHT_GRAY = new Color(240, 240, 240);
     private static final Font MAIN_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     private static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 16);
 
-    public DoctorPanel(ConsultationPanel consultationPanel, ConsultationParentPanel parentPanel) {
-        if (consultationPanel == null || parentPanel == null) {
-            throw new IllegalArgumentException("ConsultationPanel and ConsultationParentPanel must not be null");
-        }
+    private final DatabaseConnection dbConnection;
+    private final ConsultationPanel consultationPanel;
+    private final ConsultationParentPanel parentPanel;
 
+    private JTable doctorTable;
+    private DefaultTableModel model;
+    private JTextField searchField;
+    private TableRowSorter<DefaultTableModel> sorter;
+    private final Stack<Object[]> undoStack = new Stack<>();
+
+    private DoctorManager doctorManager;
+    private DoctorControlManager doctorControlManager;
+
+    public DoctorPanel(ConsultationPanel consultationPanel, ConsultationParentPanel parentPanel, DatabaseConnection dbaseConnection) {
+        super(new BorderLayout());
         this.consultationPanel = consultationPanel;
         this.parentPanel = parentPanel;
-
-        setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(10, 10, 10, 10));
-        setBackground(Color.WHITE);
+        this.dbConnection = dbaseConnection;
 
         initializeComponents();
         loadDoctorData();
+        schedulePeriodicUpdates();
     }
 
+
+    public void scheduleAppointment(String patientName, String hospitalId, int age, String sex, String specialty, String healthConcern) {
+        for (int i = 0; i < model.getRowCount(); i++) {
+            if (model.getValueAt(i, 1).equals(specialty) && model.getValueAt(i, 4).equals("Available")) {
+                String doctorName = (String) model.getValueAt(i, 0);
+                String patientConsult = (String) model.getValueAt(i, 3);
+                String[] parts = patientConsult.split(" / ");
+                int currentPatients = Integer.parseInt(parts[0]);
+                int maxPatients = Integer.parseInt(parts[1]);
+
+                if (currentPatients < maxPatients) {
+                    currentPatients++;
+                    model.setValueAt(currentPatients + " / " + maxPatients, i, 3);
+                    if (currentPatients == maxPatients) {
+                        model.setValueAt("Not Available", i, 4);
+                    }
+
+                    scheduleAppointmentTime(doctorName, patientName, hospitalId, age, sex, specialty, healthConcern);
+                    return;
+                }
+            }
+        }
+        JOptionPane.showMessageDialog(this, "No available doctors for the selected specialty.", "Scheduling Failed", JOptionPane.ERROR_MESSAGE);
+    }
+
+
     private void initializeComponents() {
-        String[] columns = {"Doctor", "Specialist", "Room", "List of Patient Consult", "Refer"};
-        model = new DefaultTableModel(columns, 0) {
+        model = new DefaultTableModel(new String[]{"ID", "Name", "Specialist", "Room", "Patient Consult", "Availability", "Edit", "Refer"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only "Refer" column is editable
+                return column == 6 || column == 7; // Only Edit and Refer columns are editable
             }
         };
 
         doctorTable = new JTable(model);
         doctorTable.setFont(MAIN_FONT);
         doctorTable.getTableHeader().setFont(TITLE_FONT);
-        doctorTable.setRowHeight(60);
+        doctorTable.setRowHeight(40);
+        doctorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
         sorter = new TableRowSorter<>(model);
         doctorTable.setRowSorter(sorter);
-        doctorTable.getColumn("Refer").setCellRenderer(new ButtonRenderer());
-        doctorTable.getColumn("Refer").setCellEditor(new ButtonEditor(new JCheckBox()));
 
         JScrollPane tableScrollPane = new JScrollPane(doctorTable);
         tableScrollPane.setBorder(BorderFactory.createLineBorder(DARK_BLUE));
 
-        searchField = createStyledTextField(20);
+        doctorManager = new DoctorManager(dbConnection, model);
+        doctorControlManager = new DoctorControlManager(dbConnection, model);
+
+        JPanel controlPanel = createControlPanel();
+
+        setLayout(new BorderLayout());
+        add(controlPanel, BorderLayout.NORTH);
+        add(tableScrollPane, BorderLayout.CENTER);
+    }
+
+    private void setButtonColumn(String columnName, Consumer<Integer> action) {
+        TableColumn column = doctorTable.getColumn(columnName);
+        column.setCellRenderer(new ButtonRenderer(columnName));
+        column.setCellEditor(new ButtonEditor(new JCheckBox(), columnName, action));
+    }
+
+    private JPanel createControlPanel() {
+        JPanel controlPanel = new JPanel(new BorderLayout());
+        controlPanel.setBackground(Color.WHITE);
+
+        searchField = new JTextField(20);
+        searchField.setFont(MAIN_FONT);
         searchField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { filterDoctors(); }
-            public void removeUpdate(DocumentEvent e) { filterDoctors(); }
             public void changedUpdate(DocumentEvent e) { filterDoctors(); }
+            public void removeUpdate(DocumentEvent e) { filterDoctors(); }
+            public void insertUpdate(DocumentEvent e) { filterDoctors(); }
         });
 
-        addDoctorField = createStyledTextField(20);
-        specialistComboBox = new JComboBox<>(getSpecialistList());
-        specialistComboBox.setFont(MAIN_FONT);
-        maxPatientsField = createStyledTextField(5);
-
-        addButton = createStyledButton("Add Doctor");
-        addButton.addActionListener(e -> addDoctor());
-
-        JButton editButton = createStyledButton(EDIT_LABEL);
-        editButton.addActionListener(e -> editAction());
-        editButton.setToolTipText("Edit the selected doctor");
-
-        JButton deleteButton = createStyledButton(DELETE_LABEL);
-        deleteButton.addActionListener(e -> deleteAction());
-        deleteButton.setToolTipText("Delete the selected doctor");
-
-        JButton saveButton = createStyledButton(SAVE_LABEL);
-        saveButton.addActionListener(e -> saveAction());
-        saveButton.setToolTipText("Save changes");
-
-        JButton undoButton = createStyledButton(UNDO_LABEL);
-        undoButton.addActionListener(e -> undoAction());
-        undoButton.setToolTipText("Undo the last action");
-
-        JButton refreshButton = createStyledButton(REFRESH_LABEL);
-        refreshButton.addActionListener(e -> refreshAction());
-        refreshButton.setToolTipText("Refresh the data");
+        JButton addDoctorButton = createStyledButton("Add New Doctor", this::addDoctor);
+        JButton saveButton = createStyledButton("Save", this::saveChanges);
+        JButton undoButton = createStyledButton("Undo", this::undoLastAction);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchPanel.setBackground(Color.WHITE);
         searchPanel.add(new JLabel("Search: "));
         searchPanel.add(searchField);
-        searchPanel.add(editButton);
-        searchPanel.add(deleteButton);
+        searchPanel.add(addDoctorButton);
         searchPanel.add(saveButton);
         searchPanel.add(undoButton);
-        searchPanel.add(refreshButton);
 
-        JPanel addDoctorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        addDoctorPanel.setBackground(Color.WHITE);
-        addDoctorPanel.add(new JLabel("Add Doctor: "));
-        addDoctorPanel.add(addDoctorField);
-        addDoctorPanel.add(specialistComboBox);
-        addDoctorPanel.add(new JLabel("Max Patients: "));
-        addDoctorPanel.add(maxPatientsField);
-        addDoctorPanel.add(addButton);
+        controlPanel.add(searchPanel, BorderLayout.CENTER);
 
-        JPanel controlPanel = new JPanel(new BorderLayout());
-        controlPanel.setBackground(Color.WHITE);
-        controlPanel.add(searchPanel, BorderLayout.NORTH);
-        controlPanel.add(addDoctorPanel, BorderLayout.SOUTH);
-
-        add(controlPanel, BorderLayout.NORTH);
-        add(tableScrollPane, BorderLayout.CENTER);
+        return controlPanel;
     }
+
+
 
     private JTextField createStyledTextField(int columns) {
         JTextField textField = new JTextField(columns);
@@ -169,140 +150,192 @@ public class DoctorPanel extends JPanel {
         return textField;
     }
 
-    private JButton createStyledButton(String text) {
+    private JButton createStyledButton(String text, Runnable action) {
         JButton button = new JButton(text);
         button.setFont(MAIN_FONT);
         button.setForeground(Color.WHITE);
         button.setBackground(DARK_BLUE);
         button.setFocusPainted(false);
+        button.addActionListener(e -> action.run());
         return button;
     }
-
-    private void editAction() {
-        int selectedRow = doctorTable.getSelectedRow();
-        if (selectedRow != -1) {
-            String doctorName = (String) doctorTable.getValueAt(selectedRow, 0);
-            String specialist = (String) doctorTable.getValueAt(selectedRow, 1);
-            String room = (String) doctorTable.getValueAt(selectedRow, 2);
-            String patientConsult = (String) doctorTable.getValueAt(selectedRow, 3);
-            String availability = (String) doctorTable.getValueAt(selectedRow, 4);
-
-            Object[] currentRowData = {doctorName, specialist, room, patientConsult, availability};
-            undoStack.push(currentRowData);
-
-            JTextField doctorNameField = new JTextField(doctorName);
-            JComboBox<String> specialistField = new JComboBox<>(getSpecialistList());
-            specialistField.setSelectedItem(specialist);
-
-            JTextField roomField = new JTextField(room);
-            JTextField patientConsultField = new JTextField(patientConsult);
-            JTextField availabilityField = new JTextField(availability);
-
-            Object[] message = {
-                "Doctor Name:", doctorNameField,
-                "Specialist:", specialistField,
-                "Room:", roomField,
-                "List of Patient Consult:", patientConsultField,
-                "Availability:", availabilityField
-            };
-
-            int option = JOptionPane.showConfirmDialog(null, message, "Edit Doctor", JOptionPane.OK_CANCEL_OPTION);
-            if (option == JOptionPane.OK_OPTION) {
-                doctorTable.setValueAt(doctorNameField.getText(), selectedRow, 0);
-                doctorTable.setValueAt(specialistField.getSelectedItem(), selectedRow, 1);
-                doctorTable.setValueAt(roomField.getText(), selectedRow, 2);
-                doctorTable.setValueAt(patientConsultField.getText(), selectedRow, 3);
-                doctorTable.setValueAt(availabilityField.getText(), selectedRow, 4);
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Please select a doctor to edit.", "No Selection", JOptionPane.ERROR_MESSAGE);
-        }
+    private void editDoctor() {
+        doctorControlManager.editAction(doctorTable);
     }
-
-    private void deleteAction() {
-        int selectedRow = doctorTable.getSelectedRow();
-        if (selectedRow != -1) {
-            Object[] currentRowData = {
-                doctorTable.getValueAt(selectedRow, 0),
-                doctorTable.getValueAt(selectedRow, 1),
-                doctorTable.getValueAt(selectedRow, 2),
-                doctorTable.getValueAt(selectedRow, 3),
-                doctorTable.getValueAt(selectedRow, 4)
-            };
-            undoStack.push(currentRowData);
-
-            model.removeRow(selectedRow);
-        } else {
-            JOptionPane.showMessageDialog(this, "Please select a doctor to delete.", "No Selection", JOptionPane.ERROR_MESSAGE);
-        }
+    
+    private void deleteDoctor() {
+        doctorControlManager.deleteAction(doctorTable);
     }
-
-    private void saveAction() {
-        try {
-            List<String[]> rows = getTableData();
-            FileUtil.writeToFile(FILE_PATH, rows);
-            JOptionPane.showMessageDialog(this, "Data saved successfully.", "Save", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException e) {
-            LOGGER.severe("Error saving table data: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, "An error occurred during saving. Please check the log for details.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    
+    private void saveChanges() {
+        doctorControlManager.saveAction();
     }
-
-    private void undoAction() {
-        if (!undoStack.isEmpty()) {
-            Object[] previousState = undoStack.pop();
-            model.addRow(previousState);
-        } else {
-            JOptionPane.showMessageDialog(this, "No actions to undo.", "Undo", JOptionPane.INFORMATION_MESSAGE);
-        }
-    }
-
-    private void refreshAction() {
-        model.setRowCount(0);
-        loadDoctorData();
+    
+    private void undoLastAction() {
+        doctorControlManager.undoAction(doctorTable);
     }
 
     private void filterDoctors() {
-        String searchText = searchField.getText().toLowerCase();
-        RowFilter<DefaultTableModel, Object> filter = RowFilter.regexFilter("(?i)" + searchText);
-        sorter.setRowFilter(filter);
+        String text = searchField.getText();
+        if (text.trim().length() == 0) {
+            sorter.setRowFilter(null);
+        } else {
+            sorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
+        }
     }
 
     private void addDoctor() {
-        String doctorName = addDoctorField.getText().trim();
-        String specialist = (String) specialistComboBox.getSelectedItem();
-        String maxPatientsStr = maxPatientsField.getText().trim();
+        doctorControlManager.addDoctor(parentPanel, doctorTable);
+    }
 
-        if (doctorName.isEmpty() || specialist == null || maxPatientsStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "All fields must be filled in to add a doctor.", "Incomplete Input", JOptionPane.WARNING_MESSAGE);
-            return;
+
+    private JPanel createBasicInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+    
+        JTextField nameField = new JTextField(20);
+        JComboBox<String> specialistCombo = new JComboBox<>(getSpecialistList());
+        JSpinner maxPatientsPerDaySpinner = new JSpinner(new SpinnerNumberModel(20, 1, 100, 1));
+        JSpinner maxPatientsPerSlotSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 10, 1));
+        JSpinner slotDurationSpinner = new JSpinner(new SpinnerNumberModel(30, 5, 120, 5));
+    
+        addLabelAndComponent(panel, gbc, "Doctor Name:", nameField, 0, 0);
+        addLabelAndComponent(panel, gbc, "Specialty:", specialistCombo, 0, 1);
+        addLabelAndComponent(panel, gbc, "Max Patients Per Day:", maxPatientsPerDaySpinner, 0, 2);
+        addLabelAndComponent(panel, gbc, "Max Patients Per Slot:", maxPatientsPerSlotSpinner, 0, 3);
+        addLabelAndComponent(panel, gbc, "Slot Duration (minutes):", slotDurationSpinner, 0, 4);
+    
+        return panel;
+    }
+    
+    private JPanel createBasicInfoPanel(Doctor doctor) {
+        JPanel panel = createBasicInfoPanel();
+        if (doctor != null) {
+            // Set the values for existing doctor
+            ((JTextField)findComponentByName(panel, "Doctor Name")).setText(doctor.getName());
+            ((JComboBox<?>)findComponentByName(panel, "Specialty")).setSelectedItem(doctor.getSpecialist());
+            ((JSpinner)findComponentByName(panel, "Max Patients Per Day")).setValue(doctor.getMaxPatientsPerDay());
+            ((JSpinner)findComponentByName(panel, "Max Patients Per Slot")).setValue(doctor.getMaxPatientsPerSlot());
+            ((JSpinner)findComponentByName(panel, "Slot Duration (minutes)")).setValue(doctor.getSlotDuration());
         }
-
-        try {
-            int maxPatients = Integer.parseInt(maxPatientsStr);
-            if (maxPatients <= 0) {
-                throw new NumberFormatException("Max patients must be greater than 0.");
+        return panel;
+    }
+    
+    private Component findComponentByName(Container container, String name) {
+        for (Component component : container.getComponents()) {
+            if (name.equals(component.getName())) {
+                return component;
             }
-            String room = generateRoom(specialist);
-            Object[] newRow = {doctorName, specialist, room, "0 / " + maxPatients, "Available"};
-            model.addRow(newRow);
-            saveDoctorData(newRow);
-            addDoctorField.setText("");
-            maxPatientsField.setText("");
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter a valid number for max patients. " + e.getMessage(), "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            if (component instanceof Container) {
+                Component found = findComponentByName((Container) component, name);
+                if (found != null) {
+                    return found;
+                }
+            }
         }
+        return null;
     }
 
-    private void saveDoctorData(Object[] newRow) {
-        try {
-            List<String[]> rows = getTableData();
-            FileUtil.writeToFile(FILE_PATH, rows);
-        } catch (IOException e) {
-            LOGGER.severe("Error saving doctor data: " + e.getMessage());
-        }
+ 
+    
+    private void referDoctor(int row) {
+        String doctorName = (String) model.getValueAt(row, 0);
+        String specialty = (String) model.getValueAt(row, 1);
+        
+        JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Schedule Appointment", true);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        panel.add(new JLabel("Doctor:"));
+        panel.add(new JLabel(doctorName));
+
+        panel.add(new JLabel("Specialty:"));
+        panel.add(new JLabel(specialty));
+
+        JTextField patientNameField = new JTextField();
+        panel.add(new JLabel("Patient Name:"));
+        panel.add(patientNameField);
+
+        JTextField hospitalIdField = new JTextField();
+        panel.add(new JLabel("Hospital ID:"));
+        panel.add(hospitalIdField);
+
+        JSpinner ageSpinner = new JSpinner(new SpinnerNumberModel(18, 0, 120, 1));
+        panel.add(new JLabel("Age:"));
+        panel.add(ageSpinner);
+
+        JComboBox<String> sexComboBox = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        panel.add(new JLabel("Sex:"));
+        panel.add(sexComboBox);
+
+        JComboBox<String> dateCombo = new JComboBox<>(getAvailableDates());
+        panel.add(new JLabel("Date:"));
+        panel.add(dateCombo);
+
+        JComboBox<String> timeCombo = new JComboBox<>(getAvailableTimes());
+        panel.add(new JLabel("Time:"));
+        panel.add(timeCombo);
+
+        JButton scheduleButton = new JButton("Schedule Appointment");
+        scheduleButton.addActionListener(e -> {
+            String patientName = patientNameField.getText();
+            String hospitalId = hospitalIdField.getText();
+            int age = (int) ageSpinner.getValue();
+            String sex = (String) sexComboBox.getSelectedItem();
+            String selectedDate = (String) dateCombo.getSelectedItem();
+            String selectedTime = (String) timeCombo.getSelectedItem();
+
+            if (patientName.isEmpty() || hospitalId.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Please fill in all fields.", "Incomplete Information", JOptionPane.WARNING_MESSAGE);
+            } else {
+                try {
+                    doctorManager.scheduleAppointment(doctorName, patientName, hospitalId, age, sex, specialty, selectedDate, selectedTime);
+                    JOptionPane.showMessageDialog(dialog, "Appointment scheduled successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadDoctorData(); // Refresh the table
+                } catch (SQLException ex) {
+                    LOGGER.log(Level.SEVERE, "Error scheduling appointment", ex);
+                    JOptionPane.showMessageDialog(dialog, "Error scheduling appointment: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        panel.add(scheduleButton);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
+private void addLabelAndComponent(JPanel panel, GridBagConstraints gbc, String label, JComponent component, int x, int y) {
+    gbc.gridx = x;
+    gbc.gridy = y;
+    panel.add(new JLabel(label), gbc);
+    gbc.gridx = x + 1;
+    panel.add(component, gbc);
+}
+
+
+private String[] generateHours() {
+    String[] hours = new String[12];
+    for (int i = 0; i < 12; i++) {
+        hours[i] = String.format("%02d", i == 0 ? 12 : i);
+    }
+    return hours;
+}
+
+
+
+private void schedulePeriodicUpdates() {
+    doctorManager.schedulePeriodicUpdates();
+}
+        
     private List<String[]> getTableData() {
         List<String[]> rows = new ArrayList<>();
         for (int i = 0; i < model.getRowCount(); i++) {
@@ -319,19 +352,33 @@ public class DoctorPanel extends JPanel {
         Map<String, Integer> specialistRoomMap = new HashMap<>();
         int roomNumber = specialistRoomMap.getOrDefault(specialist, 0) + 1;
         specialistRoomMap.put(specialist, roomNumber);
-        return specialist.substring(0, 2).toUpperCase() + roomNumber;
+        Random random = new Random();
+        return specialist.substring(0, 2).toUpperCase() + (random.nextInt(9) + 1);
     }
 
-    private void loadDoctorData() {
-        try {
-            List<String[]> rows = FileUtil.readFromFile(FILE_PATH);
-            for (String[] row : rows) {
-                model.addRow(row);
+  private void loadDoctorData() {
+        model.setRowCount(0);
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM doctors")) {
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("name"),
+                    rs.getString("specialist"),
+                    rs.getString("room"),
+                    rs.getString("patient_consult"),
+                    rs.getString("availability"),
+                    "Edit",
+                    "Refer"
+                });
             }
-        } catch (IOException e) {
-            LOGGER.severe("Error loading doctor data: " + e.getMessage());
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error loading doctor data", e);
+            JOptionPane.showMessageDialog(this, "Error loading doctor data: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     private String[] getSpecialistList() {
         // Dummy list for demonstration purposes
@@ -364,66 +411,166 @@ public class DoctorPanel extends JPanel {
         };
     }
 
-    private static class ButtonRenderer extends JButton implements TableCellRenderer {
-        public ButtonRenderer() {
-            setOpaque(true);
-            setFont(MAIN_FONT);
-            setForeground(Color.WHITE);
-            setBackground(DARK_BLUE);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            setText("Refer");
-            return this;
-        }
-    }
-
-    private class ButtonEditor extends DefaultCellEditor {
-        private final JButton button;
-        private String label;
-        private boolean isPushed;
     
-        public ButtonEditor(JCheckBox checkBox) {
-            super(checkBox);
-            button = new JButton();
-            button.setOpaque(true);
-            button.setFont(MAIN_FONT);
-            button.setForeground(Color.WHITE);
-            button.setBackground(DARK_BLUE);
-            button.addActionListener(e -> {
-                fireEditingStopped();
-                int row = doctorTable.getSelectedRow();
-                if (row != -1) {
-                    JOptionPane.showMessageDialog(DoctorPanel.this, "Refer button clicked for " + model.getValueAt(row, 0));
-                }
-            });
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            label = (value == null) ? "" : value.toString();
-            button.setText(label);
-            isPushed = true;
-            return button;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            if (isPushed) {
-                // Handle button click action here
-            }
-            isPushed = false;
-            return label;
-        }
-
-        @Override
-        public boolean stopCellEditing() {
-            isPushed = false;
-            return super.stopCellEditing();
-        }
+private class ButtonRenderer extends JButton implements TableCellRenderer {
+    public ButtonRenderer(String text) {
+        super(text);
+        setOpaque(true);
+        setFont(MAIN_FONT);
+        setForeground(Color.WHITE);
+        setBackground(DARK_BLUE);
     }
 
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value,
+            boolean isSelected, boolean hasFocus, int row, int column) {
+        return this;
+    }
+}
+
+ private class ButtonEditor extends DefaultCellEditor {
+    private final JButton button;
+    private int clickedRow;
+    private final Consumer<Integer> action;
+
+    public ButtonEditor(JCheckBox checkBox, String text, Consumer<Integer> action) {
+        super(checkBox);
+        this.action = action;
+        button = new JButton(text);
+        button.setOpaque(true);
+        button.setFont(MAIN_FONT);
+        button.setForeground(Color.WHITE);
+        button.setBackground(DARK_BLUE);
+        button.addActionListener(e -> fireEditingStopped());
+    }
+
+    @Override
+    public Component getTableCellEditorComponent(JTable table, Object value,
+            boolean isSelected, int row, int column) {
+        clickedRow = row;
+        return button;
+    }
+
+    @Override
+    public Object getCellEditorValue() {
+        action.accept(clickedRow);
+        return button.getText();
+    }
+}
+
+    private void scheduleAppointmentTime(String doctorName, String patientName, String hospitalId, int age, String sex, String specialty, String healthConcern) {
+        JPanel panel = new JPanel(new GridLayout(0, 2));
+        JTextField hospitalIdField = new JTextField(hospitalId);
+        JTextField patientNameField = new JTextField(patientName);
+        JTextField doctorNameField = new JTextField(doctorName);
+        JTextField specialtyField = new JTextField(specialty);
+        JTextField ageField = new JTextField(String.valueOf(age));
+        JTextField sexField = new JTextField(sex);
+        JComboBox<String> dateCombo = new JComboBox<>(getAvailableDates());
+        JComboBox<String> timeCombo = new JComboBox<>(getAvailableTimes());
+        
+        panel.add(new JLabel("Hospital ID:"));
+        panel.add(hospitalIdField);
+        panel.add(new JLabel("Patient Name:"));
+        panel.add(patientNameField);
+        panel.add(new JLabel("Doctor Name:"));
+        panel.add(doctorNameField);
+        panel.add(new JLabel("Specialty:"));
+        panel.add(specialtyField);
+        panel.add(new JLabel("Age:"));
+        panel.add(ageField);
+        panel.add(new JLabel("Sex:"));
+        panel.add(sexField);
+        panel.add(new JLabel("Select Date:"));
+        panel.add(dateCombo);
+        panel.add(new JLabel("Select Time:"));
+        panel.add(timeCombo);
+    
+        JButton verifyButton = new JButton("Verify Payment");
+        verifyButton.addActionListener(e -> verifyPayment(hospitalIdField.getText()));
+        panel.add(verifyButton);
+    
+        int result = JOptionPane.showConfirmDialog(null, panel, "Schedule Appointment for " + doctorName,
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            String selectedDate = (String) dateCombo.getSelectedItem();
+            String selectedTime = (String) timeCombo.getSelectedItem();
+            saveAppointment(doctorNameField.getText(), patientNameField.getText(), hospitalIdField.getText(),
+                    ageField.getText(), sexField.getText(), specialtyField.getText(), healthConcern, selectedDate, selectedTime);
+        }
+    }
+             // Modify the verifyPayment method to use prepared statements and handle resources properly
+             private void verifyPayment(String hospitalId) {
+                String query = "SELECT status, last_name, first_name, middle_name FROM receipts WHERE hospital_id = ?";
+                
+                try (Connection conn = dbConnection.getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+                    stmt.setString(1, hospitalId);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            String firstName = rs.getString("first_name");
+                            String middleName = rs.getString("middle_name");
+                            String lastName = rs.getString("last_name");
+                            
+                            String fullName = String.format("%s %s %s", firstName, 
+                                (middleName != null && !middleName.isEmpty() ? middleName + " " : ""), 
+                                lastName).trim();
+                            
+                            String status = rs.getString("status");
+                            JOptionPane.showMessageDialog(this, "Payment status for " + fullName + ": " + status, 
+                                "Payment Verification", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(this, "No record found for the given hospital ID.", 
+                                "Record Not Found", JOptionPane.WARNING_MESSAGE);
+                        }
+                    }
+                } catch (SQLException e) {
+                    LOGGER.log(Level.SEVERE, "Database error during payment verification", e);
+                    JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), 
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+         private boolean checkPaymentStatus(String hospitalId) {
+        // Implement the logic to check payment status
+        // This is a placeholder implementation
+        return true;
+    }
+
+    private void saveAppointment(String doctorName, String patientName, String hospitalId, String age, String sex, String specialty, String healthConcern, String selectedDate, String selectedTime) {
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(
+                     "INSERT INTO appointments (doctor_name, patient_name, hospital_id, age, sex, specialty, health_concern, appointment_date, appointment_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+            pstmt.setString(1, doctorName);
+            pstmt.setString(2, patientName);
+            pstmt.setString(3, hospitalId);
+            pstmt.setString(4, age);
+            pstmt.setString(5, sex);
+            pstmt.setString(6, specialty);
+            pstmt.setString(7, healthConcern);
+            pstmt.setString(8, selectedDate);
+            pstmt.setString(9, selectedTime);
+            pstmt.executeUpdate();
+    
+            JOptionPane.showMessageDialog(this, "Appointment scheduled successfully for " + patientName + " with Dr. " + doctorName + " on " + selectedDate + " at " + selectedTime, "Appointment Scheduled", JOptionPane.INFORMATION_MESSAGE);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error saving appointment", e);
+            JOptionPane.showMessageDialog(this, "Error saving appointment: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    private String[] getAvailableDates() {
+        String[] dates = new String[7];
+        LocalDate currentDate = LocalDate.now();
+        for (int i = 0; i < 7; i++) {
+            dates[i] = currentDate.plusDays(i).format(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+        return dates;
+    }
+private String[] getAvailableTimes() {
+        return new String[]{"09:00", "10:00", "11:00", "14:00", "15:00", "16:00"};
+    }
+    
     public static class FileUtil {
         public static void writeToFile(String filePath, List<String[]> data) throws IOException {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
