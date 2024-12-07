@@ -138,7 +138,16 @@ public class PatientManager {
     public void refreshTable() {
         tableModel.setRowCount(0);
         for (Patient patient : patients) {
-            addPatientToTable(patient);
+            //addPatientToTable(patient);
+            tableModel.addRow(new Object[]{
+                patient.getHospitalId(),
+                patient.getLastName(),
+                patient.getFirstName(),
+                patient.getMiddleName(),
+                patient.getBirthday(),
+                patient.getAge(),
+                patient.getSex()
+            });
         }
     }
 
@@ -153,6 +162,13 @@ public class PatientManager {
             patient.getSex()
         });
     }
+
+    public void loadPatientData() {
+        // Load patients from the database and refresh the table
+        patientManager.loadPatientsFromDatabase();
+        refreshTable();
+    }
+    
 
   public void saveEditedPatient() {
         if (editingPatient != null && editingRow != -1) {

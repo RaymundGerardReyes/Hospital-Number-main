@@ -54,7 +54,7 @@ public class PatientInformationPanel extends JPanel {
         MedicalRecordPanel medicalRecordPanel = new MedicalRecordPanel(darkMode);
         tabbedPane.addTab("Patient Medical Records", medicalRecordPanel);
     
-        addButton = new JButton("Add Patient");
+       addButton = new JButton("Add Patient");
         editButton = new JButton("Edit");
         deleteButton = new JButton("Delete");
         saveButton = new JButton("Save");
@@ -73,7 +73,7 @@ public class PatientInformationPanel extends JPanel {
         topPanel.add(sortComboBox);
     
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(addButton);
+       // buttonPanel.add(addButton);
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(saveButton);
