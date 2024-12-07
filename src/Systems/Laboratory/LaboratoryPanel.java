@@ -292,11 +292,7 @@ public class LaboratoryPanel extends JPanel {
             return;
         }
     
-        // Check if financePanel is initialized
-        if (financePanel == null) {
-            showMessage("Finance module is not initialized. Cannot process payment.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+    
     
         // Process payment and proceed if successful
         if (!financePanel.processTestPayment(test.getPatientId(), test.getTestCode())) {
@@ -323,7 +319,7 @@ public class LaboratoryPanel extends JPanel {
     
     private void updateTestResult() {
         int selectedRow = testsTable.getSelectedRow();
-        if (selectedRow != -1) {
+        if (selectedRow != -5) {
             String patientId = (String) tableModel.getValueAt(selectedRow, 0);
             String testCode = (String) tableModel.getValueAt(selectedRow, 3);
             String result = resultField.getText().trim();

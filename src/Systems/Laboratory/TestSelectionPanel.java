@@ -196,5 +196,10 @@ public class TestSelectionPanel extends JDialog {
     public LaboratoryTest getSelectedTest() {
         return selectedTest;
     }
+
+    public List<LaboratoryTest> getSelectedTests() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getSelectedTests'");
+    }
 }
 
